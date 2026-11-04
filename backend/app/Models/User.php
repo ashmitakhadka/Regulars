@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Models;
+use App\Models\Merchant;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
@@ -9,8 +10,9 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['name', 'email', 'password', 'role'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -29,4 +31,20 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+    public function merchant()
+{
+    return $this->hasOne(Merchant::class);
+}
+public function merchantStats(): HasMany
+{
+    return $this->hasMany(UserMerchantStat::class, 'customer_id');
+}
+public function vouchers(): HasMany
+{
+    return $this->hasMany(Voucher::class, 'customer_id');
+}
+public function targetedOffers(): HasMany
+{
+    return $this->hasMany(TargetedOffer::class, 'customer_id');
+}
 }
