@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { Button } from "./ui/Button";
+import { Logo } from "./ui/Logo";
 
 const links = [
   { href: "/", label: "Home" },
@@ -11,18 +13,6 @@ const links = [
 const focus =
   "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-800";
 
-function StarIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-7 w-7 fill-brand-800"
-      aria-hidden="true"
-    >
-      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-    </svg>
-  );
-}
-
 export const Footer = () => {
   const { user } = useAuth();
 
@@ -30,17 +20,9 @@ export const Footer = () => {
     <footer className="border-t border-blush-200 bg-blush-100">
       <div className="mx-auto max-w-6xl px-5 pb-10 pt-14 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-[2fr_1fr_1fr] md:gap-12">
-          {/* Brand - matches Navbar logo exactly */}
+          {/* Brand - matches Navbar logo */}
           <div className="sm:col-span-2 md:col-span-1">
-            <Link
-              to="/"
-              className={`inline-flex items-center gap-2 ${focus}`}
-            >
-              <StarIcon />
-              <span className="font-display text-2xl font-extrabold tracking-tight text-brand-900">
-                Regulars<span className="text-brand-800">.</span>
-              </span>
-            </Link>
+            <Logo to="/" size="md" />
 
             <p className="mt-4 max-w-sm text-base leading-relaxed text-ink-soft">
               Digital loyalty cards for local businesses. Customers scan a QR
@@ -75,12 +57,13 @@ export const Footer = () => {
             <ul className="mt-4 space-y-3">
               {user ? (
                 <li>
-                  <Link
+                  <Button
                     to="/merchant/profile"
-                    className={`inline-flex items-center justify-center rounded-lg bg-brand-800 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-900 ${focus}`}
+                    variant="primary"
+                    size="sm"
                   >
                     Go to Dashboard
-                  </Link>
+                  </Button>
                 </li>
               ) : (
                 <>
@@ -93,12 +76,13 @@ export const Footer = () => {
                     </Link>
                   </li>
                   <li className="pt-1">
-                    <Link
+                    <Button
                       to="/merchant/register"
-                      className={`inline-flex items-center justify-center rounded-lg bg-brand-800 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-900 ${focus}`}
+                      variant="primary"
+                      size="sm"
                     >
                       Get Started
-                    </Link>
+                    </Button>
                   </li>
                 </>
               )}
