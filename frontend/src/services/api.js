@@ -8,4 +8,12 @@ const api = axios.create({
   },
 });
 
+export const TOKEN_KEY = "regulars_merchant_token";
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
 export default api;
