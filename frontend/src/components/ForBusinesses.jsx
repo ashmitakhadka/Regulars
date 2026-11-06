@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faLayerGroup,
@@ -6,6 +5,7 @@ import {
   faBullhorn,
   faChartLine,
 } from "@fortawesome/free-solid-svg-icons";
+import { Button } from "./ui/Button";
 
 const benefits = [
   {
@@ -42,12 +42,14 @@ export const ForBusinesses = () => {
             Cafes, salons, gyms and shops use Regulars to turn first visits into
             repeat customers.
           </p>
-          <Link
+          <Button
             to="/merchant/register"
-            className="mt-6 inline-flex rounded-lg bg-brand-800 px-6 py-3 text-sm font-bold text-white transition hover:bg-brand-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-800"
+            variant="primary"
+            size="md"
+            className="mt-6 font-bold"
           >
             Register your business
-          </Link>
+          </Button>
         </div>
 
         <ul className="divide-y divide-blush-200 lg:col-span-3">
