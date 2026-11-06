@@ -5,6 +5,16 @@ use App\Models\User;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+
+#[Fillable([
+    'user_id',
+    'business_name',
+    'slug',
+    'description',
+    'phone',
+    'address',
+])]
 
 class Merchant extends Model
 {

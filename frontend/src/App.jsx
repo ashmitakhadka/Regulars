@@ -5,8 +5,10 @@ import {
 } from "react-router-dom";
 
 import { AuthProvider } from "./auth/AuthContext";
-
 import Home from "./pages/Home";
+import { MerchantRegistration } from "./pages/merchantAuth/merchantRegister";
+import { Toaster } from "react-hot-toast";
+import { MerchantLogin } from "./pages/merchantAuth/merchantLogin";
 import Login from "./pages/customer/Login";
 import Verify from "./pages/customer/Verify";
 import Join from "./pages/customer/Join";
@@ -44,13 +46,18 @@ const router = createBrowserRouter([
 
   // Fallback
   { path: "*", element: <Navigate to="/" replace /> },
+  { path: "/merchant/register", element: <MerchantRegistration /> },
+  { path: "/merchant/login", element: <MerchantLogin /> },
 ]);
 
 export const App = () => {
   return (
-    <AuthProvider>
-      <RouterProvider router={router} />
-    </AuthProvider>
+    <>
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
+      <Toaster position="top-right" />
+    </>
   );
 };
 
