@@ -4,9 +4,13 @@ import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import api from "../../services/api";
 import { MerchantLoginSchema } from "../../schema/merchantLoginSchema";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
+import { useState } from "react";
 
 export const MerchantLogin = () => {
   const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -91,12 +95,22 @@ export const MerchantLogin = () => {
               Password
             </label>
 
-            <input
-              type="password"
-              placeholder="Enter your password"
-              {...register("password")}
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-[#91040c]"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password"
+                {...register("password")}
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 pr-12 outline-none focus:border-[#91040c]"
+              />
+
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#91040c]"
+              >
+                <FontAwesomeIcon icon={showPassword ? faEye : faEyeSlash} />
+              </button>
+            </div>
 
             {errors.password && (
               <p className="mt-1 text-sm text-red-600">

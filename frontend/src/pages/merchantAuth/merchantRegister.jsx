@@ -5,10 +5,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { MerchantRegisterSchema } from "../../schema/merchantRegistrationSchema";
 import api from "../../services/api";
 import toast from "react-hot-toast";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 
 export const MerchantRegistration = () => {
   const [step, setStep] = useState(1);
   const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const {
     register,
@@ -210,13 +214,25 @@ export const MerchantRegistration = () => {
                     Password
                   </label>
 
-                  <input
-                    id="password"
-                    type="password"
-                    {...register("password")}
-                    placeholder="Enter your password"
-                    className={inputClass}
-                  />
+                  <div className="relative">
+                    <input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      {...register("password")}
+                      placeholder="Enter your password"
+                      className={`${inputClass} pr-12`}
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#91040c]"
+                    >
+                      <FontAwesomeIcon
+                        icon={showPassword ? faEye : faEyeSlash}
+                      />
+                    </button>
+                  </div>
 
                   {errors.password && (
                     <p className="mt-1 text-sm text-red-600">
@@ -230,13 +246,27 @@ export const MerchantRegistration = () => {
                     Confirm Password
                   </label>
 
-                  <input
-                    id="password_confirmation"
-                    type="password"
-                    {...register("password_confirmation")}
-                    placeholder="Confirm your password"
-                    className={inputClass}
-                  />
+                  <div className="relative">
+                    <input
+                      id="password_confirmation"
+                      type={showConfirmPassword ? "text" : "password"}
+                      {...register("password_confirmation")}
+                      placeholder="Confirm your password"
+                      className={`${inputClass} pr-12`}
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#91040c]"
+                    >
+                      <FontAwesomeIcon
+                        icon={showConfirmPassword ? faEye : faEyeSlash}
+                      />
+                    </button>
+                  </div>
 
                   {errors.password_confirmation && (
                     <p className="mt-1 text-sm text-red-600">
@@ -244,7 +274,6 @@ export const MerchantRegistration = () => {
                     </p>
                   )}
                 </div>
-
                 <button
                   type="button"
                   onClick={handleNextStep}
