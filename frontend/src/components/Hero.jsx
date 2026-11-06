@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
 import heroImage from "../assets/hero-cafe.jpg";
+import { Button } from "./ui/Button";
 
 export const Hero = () => {
   return (
@@ -26,18 +26,12 @@ export const Hero = () => {
             scan a QR code, collect stamps and claim rewards from their phone.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link
-              to="/merchant/register"
-              className="inline-flex items-center justify-center rounded-lg bg-white px-7 py-3.5 text-base font-bold text-brand-900 transition hover:bg-blush-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-            >
+            <Button to="/merchant/register" variant="onDark" size="lg">
               Register your business
-            </Link>
-            <Link
-              to="/merchant/login"
-              className="inline-flex items-center justify-center rounded-lg border-2 border-white/80 px-7 py-3.5 text-base font-bold text-white transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-            >
+            </Button>
+            <Button to="/merchant/login" variant="onDarkOutline" size="lg">
               Log in
-            </Link>
+            </Button>
           </div>
           <p className="mt-5 text-base text-white/80">
             Customers only need their phone camera.

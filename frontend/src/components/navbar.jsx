@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { Button } from "./ui/Button";
+import { Logo } from "./ui/Logo";
 
 const links = [
   { href: "/", label: "Home" },
@@ -11,18 +12,6 @@ const links = [
 
 const focus =
   "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-800";
-
-function StarIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-7 w-7 fill-brand-800"
-      aria-hidden="true"
-    >
-      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-    </svg>
-  );
-}
 
 export const Navbar = () => {
   const { user } = useAuth();
@@ -42,17 +31,8 @@ export const Navbar = () => {
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-[76px] max-w-6xl items-center justify-between px-5 sm:px-6 lg:px-8">
-        {/* Logo */}
-        <Link
-          to="/"
-          onClick={close}
-          className={`flex shrink-0 items-center gap-2 ${focus}`}
-        >
-          <StarIcon />
-          <span className="font-display text-2xl font-extrabold tracking-tight text-brand-900">
-            Regulars<span className="text-brand-800">.</span>
-          </span>
-        </Link>
+        {/* Logo with flame icon */}
+        <Logo to="/" onClick={close} size="md" />
 
         {/* Desktop Navigation */}
         <nav
@@ -73,27 +53,23 @@ export const Navbar = () => {
         {/* Authentication Actions */}
         <div className="flex items-center gap-3">
           {user ? (
-            <Link
-              to="/merchant/profile"
-              className={`rounded-lg bg-brand-800 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-900 sm:text-base ${focus}`}
-            >
+            <Button to="/merchant/profile" variant="primary" size="md">
               Go to Dashboard
-            </Link>
+            </Button>
           ) : (
             <>
-              <Link
+              <Button
                 to="/merchant/login"
-                className={`hidden rounded-lg px-4 py-2.5 text-sm font-semibold text-brand-900 transition hover:bg-blush-100 sm:inline-flex ${focus}`}
+                variant="ghost"
+                size="md"
+                className="hidden sm:inline-flex"
               >
                 Log In
-              </Link>
+              </Button>
 
-              <Link
-                to="/merchant/register"
-                className={`inline-flex items-center justify-center rounded-lg bg-brand-800 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-900 sm:px-5 sm:text-base ${focus}`}
-              >
+              <Button to="/merchant/register" variant="primary" size="md">
                 Get Started
-              </Link>
+              </Button>
             </>
           )}
 
@@ -147,13 +123,15 @@ export const Navbar = () => {
 
             {!user && (
               <li className="border-t border-blush-200 pt-2 sm:hidden">
-                <Link
+                <Button
                   to="/merchant/login"
                   onClick={close}
-                  className={`block rounded-lg px-4 py-3 text-base font-semibold text-brand-900 hover:bg-blush-100 ${focus}`}
+                  variant="ghost"
+                  fullWidth
+                  className="justify-start px-4 py-3"
                 >
                   Log In
-                </Link>
+                </Button>
               </li>
             )}
           </ul>
