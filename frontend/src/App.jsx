@@ -19,7 +19,7 @@ import VoucherDetail from "./pages/customer/VoucherDetail";
 import Profile from "./pages/customer/Profile";
 import UIPreview from "./pages/UIPreview";
 import CustomerLayout from "./layouts/CustomerLayout";
-import { Merchantdashboard } from "./pages/merchant/MerchantDashboard";
+import { MerchantDashboard } from "./pages/merchant/MerchantDashboard";
 
 const router = createBrowserRouter([
   // Landing Page
@@ -51,7 +51,7 @@ const router = createBrowserRouter([
   { path: "/merchant/login", element: <MerchantLogin /> },
 
   //merchant
-  { path: "/merchantdahboard", element: <Merchantdashboard /> },
+  { path: "/merchantdashboard", element: <MerchantDashboard /> },
 ]);
 
 export const App = () => {
