@@ -1,4 +1,6 @@
 import MerchantSidebar from "../../components/merchant/MerchantSidebar";
+import { DashboardHeader } from "../../components/merchant/DashboardHeader";
+import { DashboardStats } from "../../components/merchant/DashboardStats";
 
 export const MerchantDashboard = () => {
   return (
@@ -8,13 +10,8 @@ export const MerchantDashboard = () => {
 
       {/* Main Content */}
       <main className="flex-1 p-6 sm:p-8">
-        <h1 className="font-display text-3xl font-extrabold text-brand-900">
-          Dashboard
-        </h1>
-
-        <p className="mt-2 text-sm text-ink-soft">
-          Welcome back! Here's an overview of your business.
-        </p>
+        <DashboardHeader />
+        <DashboardStats />
       </main>
     </div>
   );
