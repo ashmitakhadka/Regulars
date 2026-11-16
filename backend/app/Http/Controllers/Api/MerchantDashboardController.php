@@ -9,6 +9,41 @@ use Illuminate\Support\Carbon;
 
 class MerchantDashboardController extends Controller
 {
+   public function me(Request $request)
+{
+    $user = $request->user();
+
+    if ($user->role !== 'merchant') {
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthorized access.',
+        ], 403);
+    }
+
+    $merchant = $user->merchant;
+
+    if (!$merchant || $merchant->status !== 'active') {
+        return response()->json([
+            'success' => false,
+            'message' => 'Merchant account is not active.',
+        ], 403);
+    }
+
+    return response()->json([
+        'success' => true,
+        'user' => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role,
+        ],
+        'merchant' => [
+            'id' => $merchant->id,
+            'business_name' => $merchant->business_name,
+            'slug' => $merchant->slug,
+        ],
+    ]);
+}
     public function index(Request $request)
     {
         $user = $request->user();

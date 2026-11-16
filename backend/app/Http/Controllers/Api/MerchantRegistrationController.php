@@ -11,6 +11,7 @@ use App\Models\Merchant;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class MerchantRegistrationController extends Controller
 {
@@ -55,7 +56,7 @@ class MerchantRegistrationController extends Controller
         ], 201);
     }
 
-    public function login(MerchantLoginRequest $request)
+  public function login(MerchantLoginRequest $request)
 {
     $credentials = $request->validated();
 
@@ -75,7 +76,7 @@ class MerchantRegistrationController extends Controller
         ], 403);
     }
 
-    $merchant = \App\Models\Merchant::where('user_id', $user->id)->first();
+    $merchant = Merchant::where('user_id', $user->id)->first();
 
     if (!$merchant || $merchant->status !== 'active') {
         return response()->json([
@@ -84,12 +85,15 @@ class MerchantRegistrationController extends Controller
         ], 403);
     }
 
-    $token = $user->createToken('merchant-token')->plainTextToken;
+    // Log in using Laravel's session guard
+    Auth::guard('web')->login($user);
+
+    // Regenerate session ID for security
+    $request->session()->regenerate();
 
     return response()->json([
         'success' => true,
         'message' => 'Merchant login successful!',
-        'token' => $token,
         'user' => [
             'id' => $user->id,
             'name' => $user->name,
@@ -106,7 +110,10 @@ class MerchantRegistrationController extends Controller
 
 public function logout(Request $request)
 {
-    $request->user()->currentAccessToken()->delete();
+    Auth::guard('web')->logout();
+
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
 
     return response()->json([
         'success' => true,
