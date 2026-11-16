@@ -5,53 +5,65 @@ import {
   useEffect,
   useState,
 } from "react";
-import api, { TOKEN_KEY } from "../services/api";
+import api from "../services/api";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [merchant, setMerchant] = useState(null);
-  const [loading, setLoading] = useState(!!localStorage.getItem(TOKEN_KEY));
+  const [loading, setLoading] = useState(true);
 
   const clear = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY);
     setUser(null);
     setMerchant(null);
   }, []);
 
-  // Restore the session on page load (only if a token is stored).
+  // Restore the merchant session when the application loads.
   useEffect(() => {
-    if (!localStorage.getItem(TOKEN_KEY)) return;
     api
       .get("/merchant/me")
       .then(({ data }) => {
         setUser(data.user);
         setMerchant(data.merchant);
       })
-      .catch(clear)
-      .finally(() => setLoading(false));
+      .catch(() => {
+        clear();
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [clear]);
 
-  const applySession = ({ token, user, merchant }) => {
-    localStorage.setItem(TOKEN_KEY, token);
+  // Apply authenticated merchant details to the context.
+  const applySession = ({ user, merchant }) => {
     setUser(user);
     setMerchant(merchant);
   };
 
+  // Merchant login using Sanctum session authentication.
   const login = async (credentials) => {
-    const { data } = await api.post("/merchant/login", credentials);
+    const backendUrl = import.meta.env.VITE_API_URL.replace(/\/api\/?$/, "");
+
+    await api.get("/sanctum/csrf-cookie", {
+      baseURL: backendUrl,
+    });
+
+    const { data } = await api.post("/login/merchant", credentials);
     applySession(data);
+    return data;
   };
 
+  // Merchant registration does not automatically log the merchant in.
   const register = async (payload) => {
-    const { data } = await api.post("/merchant/register", payload);
-    applySession(data);
+    const { data } = await api.post("/register/merchant", payload);
+    return data;
   };
 
+  // Merchant logout.
   const logout = async () => {
     try {
-      await api.post("/merchant/logout");
+      await api.post("/logout/merchant");
     } finally {
       clear();
     }
@@ -59,7 +71,15 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, merchant, setMerchant, loading, login, register, logout }}
+      value={{
+        user,
+        merchant,
+        setMerchant,
+        loading,
+        login,
+        register,
+        logout,
+      }}
     >
       {children}
     </AuthContext.Provider>
@@ -74,7 +94,11 @@ export const useAuth = () => useContext(AuthContext);
 export function parseApiError(err) {
   const data = err.response?.data;
   const fields = {};
-  Object.entries(data?.errors ?? {}).forEach(([k, v]) => (fields[k] = v[0]));
+
+  Object.entries(data?.errors ?? {}).forEach(([key, value]) => {
+    fields[key] = value[0];
+  });
+
   return {
     fields,
     message: data?.message ?? "Something went wrong. Please try again.",

@@ -4,7 +4,7 @@ import {
   RouterProvider,
 } from "react-router-dom";
 
-import { AuthProvider } from "./auth/AuthContext";
+import { AuthProvider, useAuth } from "./auth/AuthContext";
 import Home from "./pages/Home";
 import { MerchantRegistration } from "./pages/merchantAuth/merchantRegister";
 import { Toaster } from "react-hot-toast";
@@ -20,6 +20,24 @@ import Profile from "./pages/customer/Profile";
 import UIPreview from "./pages/UIPreview";
 import CustomerLayout from "./layouts/CustomerLayout";
 import { MerchantDashboard } from "./pages/merchant/MerchantDashboard";
+
+const MerchantProtectedRoute = ({ children }) => {
+  const { user, merchant, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <p className="text-[#23140C]">Loading your merchant workspace...</p>
+      </div>
+    );
+  }
+
+  if (!user || user.role !== "merchant" || !merchant) {
+    return <Navigate to="/merchant/login" replace />;
+  }
+
+  return children;
+};
 
 const router = createBrowserRouter([
   // Landing Page
@@ -50,8 +68,14 @@ const router = createBrowserRouter([
   { path: "/merchant/register", element: <MerchantRegistration /> },
   { path: "/merchant/login", element: <MerchantLogin /> },
 
-  //merchant
-  { path: "/merchant/dashboard", element: <MerchantDashboard /> },
+  {
+    path: "/merchant/dashboard",
+    element: (
+      <MerchantProtectedRoute>
+        <MerchantDashboard />
+      </MerchantProtectedRoute>
+    ),
+  },
 ]);
 
 export const App = () => {

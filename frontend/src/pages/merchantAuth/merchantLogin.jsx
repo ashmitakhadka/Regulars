@@ -2,14 +2,15 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import api, { TOKEN_KEY } from "../../services/api";
 import { MerchantLoginSchema } from "../../schema/merchantLoginSchema";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import { useState } from "react";
+import { useAuth } from "../../auth/AuthContext";
 
 export const MerchantLogin = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
   const {
@@ -22,30 +23,22 @@ export const MerchantLogin = () => {
 
   const handleLogin = async (data) => {
     try {
-      const response = await api.post("/login/merchant", data);
+      const response = await login(data);
 
-      console.log(response.data);
+      toast.success(response.message || "Login successful!");
 
-      // Store Sanctum token
-      localStorage.setItem(TOKEN_KEY, response.data.token);
-
-      toast.success(response.data.message || "Login successful!");
-
-      navigate("/merchant/dashboard");
+      navigate("/merchant/dashboard", { replace: true });
     } catch (error) {
       console.error("Login failed:", error);
 
       if (error.response) {
         const message = error.response.data.message || "Login failed!";
-
         toast.error(message);
 
         if (error.response.data.errors) {
           Object.values(error.response.data.errors)
             .flat()
-            .forEach((errorMessage) => {
-              toast.error(errorMessage);
-            });
+            .forEach((errorMessage) => toast.error(errorMessage));
         }
       } else if (error.request) {
         toast.error("Unable to connect to the server. Please try again.");
