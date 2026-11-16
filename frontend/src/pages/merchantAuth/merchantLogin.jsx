@@ -2,11 +2,16 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import api from "../../services/api";
 import { MerchantLoginSchema } from "../../schema/merchantLoginSchema";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
+import { useState } from "react";
+import { useAuth } from "../../auth/AuthContext";
 
 export const MerchantLogin = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -18,30 +23,22 @@ export const MerchantLogin = () => {
 
   const handleLogin = async (data) => {
     try {
-      const response = await api.post("/login/merchant", data);
+      const response = await login(data);
 
-      console.log(response.data);
+      toast.success(response.message || "Login successful!");
 
-      // Store Sanctum token
-      localStorage.setItem("token", response.data.token);
-
-      toast.success(response.data.message || "Login successful!");
-
-      navigate("/merchant/dashboard");
+      navigate("/merchant/dashboard", { replace: true });
     } catch (error) {
       console.error("Login failed:", error);
 
       if (error.response) {
         const message = error.response.data.message || "Login failed!";
-
         toast.error(message);
 
         if (error.response.data.errors) {
           Object.values(error.response.data.errors)
             .flat()
-            .forEach((errorMessage) => {
-              toast.error(errorMessage);
-            });
+            .forEach((errorMessage) => toast.error(errorMessage));
         }
       } else if (error.request) {
         toast.error("Unable to connect to the server. Please try again.");
@@ -91,12 +88,22 @@ export const MerchantLogin = () => {
               Password
             </label>
 
-            <input
-              type="password"
-              placeholder="Enter your password"
-              {...register("password")}
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-[#91040c]"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password"
+                {...register("password")}
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 pr-12 outline-none focus:border-[#91040c]"
+              />
+
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#91040c]"
+              >
+                <FontAwesomeIcon icon={showPassword ? faEye : faEyeSlash} />
+              </button>
+            </div>
 
             {errors.password && (
               <p className="mt-1 text-sm text-red-600">
