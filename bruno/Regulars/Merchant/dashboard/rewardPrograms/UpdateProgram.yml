@@ -1,0 +1,23 @@
+info:
+  name: UpdateProgram
+  type: http
+  seq: 4
+
+http:
+  method: PUT
+  url: http://localhost:8000/api/merchant/reward-programs/1
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Premium Coffee Rewards",
+        "description": "Updated loyalty program for regular customers."
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
