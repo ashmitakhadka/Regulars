@@ -46,7 +46,10 @@ export const DashboardStats = () => {
   }
 
   return (
-    <section className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+    <section
+      className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4"
+      aria-busy={loading}
+    >
       {statsConfig.map((stat) => (
         <div
           key={stat.label}
@@ -62,9 +65,18 @@ export const DashboardStats = () => {
             </div>
           </div>
 
-          <h2 className="mt-7 font-display text-3xl font-bold text-[#23140C]">
-            {loading ? "..." : Number(stats[stat.key]).toLocaleString()}
-          </h2>
+          <div className="mt-7">
+            {loading ? (
+              <div
+                className="h-9 w-16 animate-pulse rounded-md bg-[#F4F0EA]"
+                aria-label="Loading statistic"
+              />
+            ) : (
+              <h2 className="font-display text-3xl font-bold text-[#23140C]">
+                {Number(stats[stat.key]).toLocaleString()}
+              </h2>
+            )}
+          </div>
         </div>
       ))}
     </section>
