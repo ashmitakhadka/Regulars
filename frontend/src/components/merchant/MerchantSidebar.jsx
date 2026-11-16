@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import api, { TOKEN_KEY } from "../../services/api";
+import api from "../../services/api";
+import toast from "react-hot-toast";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faGauge,
@@ -33,13 +34,18 @@ export const MerchantSidebar = () => {
 
   const handleLogout = async () => {
     try {
-      await api.post("/logout/merchant");
-      toast.success("Logged out successfully.");
+      const response = await api.post("/logout/merchant");
+
+      toast.success(response.data.message || "Logged out successfully.");
+
+      setIsMenuOpen(false);
+      navigate("/merchant/login", { replace: true });
     } catch (error) {
       console.error("Logout error:", error);
-    } finally {
-      localStorage.removeItem(TOKEN_KEY);
-      navigate("/merchant/login", { replace: true });
+
+      toast.error(
+        error.response?.data?.message || "Unable to log out. Please try again.",
+      );
     }
   };
 
