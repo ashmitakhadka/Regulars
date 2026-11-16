@@ -2,7 +2,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import api from "../../services/api";
+import api, { TOKEN_KEY } from "../../services/api";
 import { MerchantLoginSchema } from "../../schema/merchantLoginSchema";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
@@ -27,7 +27,7 @@ export const MerchantLogin = () => {
       console.log(response.data);
 
       // Store Sanctum token
-      localStorage.setItem("token", response.data.token);
+      localStorage.setItem(TOKEN_KEY, response.data.token);
 
       toast.success(response.data.message || "Login successful!");
 

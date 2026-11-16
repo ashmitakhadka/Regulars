@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import api, { TOKEN_KEY } from "../../services/api";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faGauge,
@@ -28,6 +29,19 @@ const navigationItems = [
 
 export const MerchantSidebar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await api.post("/logout/merchant");
+      toast.success("Logged out successfully.");
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      localStorage.removeItem(TOKEN_KEY);
+      navigate("/merchant/login", { replace: true });
+    }
+  };
 
   const navigationLinks = (mobile = false) =>
     navigationItems.map((item) => (
@@ -76,6 +90,7 @@ export const MerchantSidebar = () => {
 
         <button
           type="button"
+          onClick={handleLogout}
           className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold text-[#23140C] hover:bg-white"
         >
           <FontAwesomeIcon icon={faRightFromBracket} className="w-4" />
@@ -112,6 +127,7 @@ export const MerchantSidebar = () => {
             <div className="mt-5 border-t border-[#F4F0EA] pt-4">
               <button
                 type="button"
+                onClick={handleLogout}
                 className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-xs sm:text-sm font-semibold text-[#23140C] hover:bg-[#F4F0EA]"
               >
                 <FontAwesomeIcon icon={faRightFromBracket} className="w-4" />

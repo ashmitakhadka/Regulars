@@ -51,7 +51,7 @@ const router = createBrowserRouter([
   { path: "/merchant/login", element: <MerchantLogin /> },
 
   //merchant
-  { path: "/merchantdashboard", element: <MerchantDashboard /> },
+  { path: "/merchant/dashboard", element: <MerchantDashboard /> },
 ]);
 
 export const App = () => {
