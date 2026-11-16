@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\Merchant;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Http\Request;
 
 class MerchantRegistrationController extends Controller
 {
@@ -101,5 +102,15 @@ class MerchantRegistrationController extends Controller
             'slug' => $merchant->slug,
         ],
     ], 200);
+}
+
+public function logout(Request $request)
+{
+    $request->user()->currentAccessToken()->delete();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Merchant logged out successfully.',
+    ]);
 }
 }
