@@ -24,6 +24,7 @@ import { LoyaltyPrograms } from "./pages/merchant/LoyaltyPrograms";
 import { CreateLoyaltyProgram } from "./pages/merchant/CreateLoyaltyProgram";
 import { LoyaltyProgramDetails } from "./pages/merchant/LoyaltyProgramDetails";
 import { EditLoyaltyProgram } from "./pages/merchant/EditLoyaltyProgram";
+import MerchantQrCode from "./components/merchant/MerchantQrCode";
 
 const MerchantProtectedRoute = ({ children }) => {
   const { user, merchant, loading } = useAuth();
@@ -141,6 +142,14 @@ const router = createBrowserRouter([
   {
     path: "/merchant/rewards",
     element: <Navigate to="/merchant/loyalty-programs" replace />,
+  },
+  {
+    path: "/merchant/qr-code",
+    element: (
+      <MerchantProtectedRoute>
+        <MerchantQrCode />
+      </MerchantProtectedRoute>
+    ),
   },
 
   // Fallback (placed after explicit routes)

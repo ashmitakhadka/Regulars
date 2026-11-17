@@ -50,9 +50,9 @@ class MerchantQrCodeController extends Controller
             'success' => true,
             'message' => 'Business QR retrieved successfully.',
             'data' => [
-                'qr_url' => $frontendUrl . '/businesses/' . $merchant->slug
-                    . '/join?qr=' . $token,
+                'qr_url' => $frontendUrl . '/join/' . $merchant->slug. '?qr=' . $token,
                 'type' => 'business',
+                'business_name' => $merchant->business_name,
             ],
         ]);
     }
