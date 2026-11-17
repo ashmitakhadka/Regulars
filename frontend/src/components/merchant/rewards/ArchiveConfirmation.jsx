@@ -2,7 +2,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBoxArchive,
   faTriangleExclamation,
-  faCheck,
 } from "@fortawesome/free-solid-svg-icons";
 import { Button } from "../../ui";
 

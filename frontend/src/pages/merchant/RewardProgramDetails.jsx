@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -6,10 +6,8 @@ import {
   faArrowLeft,
   faPen,
   faRotateRight,
-  faPowerOff,
   faPause,
   faPlay,
-  faCircleExclamation,
   faCheck,
   faBoxArchive,
 } from "@fortawesome/free-solid-svg-icons";
@@ -34,7 +32,7 @@ export const RewardProgramDetails = () => {
   const [archiveModalOpen, setArchiveModalOpen] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
 
-  const fetchProgram = useCallback(async () => {
+  const loadProgram = async () => {
     if (!id) return;
     setLoading(true);
     setError(null);
@@ -56,11 +54,44 @@ export const RewardProgramDetails = () => {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  };
 
   useEffect(() => {
-    fetchProgram();
-  }, [fetchProgram]);
+    let ignore = false;
+
+    rewardProgramService
+      .getProgramDetails(id)
+      .then((response) => {
+        if (!ignore) {
+          setProgram(response.data);
+          setError(null);
+        }
+      })
+      .catch((err) => {
+        if (!ignore) {
+          console.error("Failed to fetch program details:", err);
+          if (err.response?.status === 404) {
+            setError(
+              "Reward program not found. It may have been archived or does not exist.",
+            );
+          } else {
+            setError(
+              err.response?.data?.message ||
+                "Unable to load program details. Please try again.",
+            );
+          }
+        }
+      })
+      .finally(() => {
+        if (!ignore) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [id]);
 
   const isArchived = program?.status === "archived";
   const isActive = program?.status === "active";
@@ -157,7 +188,7 @@ export const RewardProgramDetails = () => {
               message={error}
               action={
                 <div className="flex items-center gap-3">
-                  <Button variant="outline" size="sm" onClick={fetchProgram}>
+                  <Button variant="outline" size="sm" onClick={loadProgram}>
                     <FontAwesomeIcon icon={faRotateRight} />
                     <span>Try Again</span>
                   </Button>
@@ -192,7 +223,7 @@ export const RewardProgramDetails = () => {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={fetchProgram}
+                  onClick={loadProgram}
                   title="Refresh details"
                 >
                   <FontAwesomeIcon icon={faRotateRight} />
