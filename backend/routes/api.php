@@ -1,6 +1,7 @@
 
 <?php
 
+use App\Http\Controllers\Api\MerchantCustomerController;
 use App\Http\Controllers\Api\MerchantDashboardController;
 use App\Http\Controllers\Api\MerchantQrCodeController;
 use App\Http\Controllers\Api\MerchantRegistrationController;
@@ -27,6 +28,10 @@ Route::middleware('auth:sanctum')->group(function () {
     //Program and Business OR
     Route::post('/merchant/qr-codes/business',[MerchantQrCodeController::class, 'generateBusinessQr']);
     Route::post('/merchant/loyalty-programs/{id}/qr-codes/',[MerchantQrCodeController::class, 'generateProgramQr']);
+
+    //Merchant-Customers
+    Route::get('/merchant/customers',[MerchantCustomerController::class, 'getCustomers']);
+    Route::post('merchant/customer/enroll',[MerchantCustomerController::class, 'enrollCustomer']);
 
 });
 
