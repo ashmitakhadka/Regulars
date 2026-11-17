@@ -31,6 +31,11 @@ class MerchantQrCode extends Model
         return $this->belongsTo(Merchant::class);
     }
 
+    public function loyaltyProgram(): BelongsTo
+{
+    return $this->belongsTo(LoyaltyProgram::class);
+}
+
     public function visits(): HasMany
     {
         return $this->hasMany(Visit::class);
