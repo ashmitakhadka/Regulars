@@ -19,7 +19,10 @@ class LoyaltyProgram extends Model
     {
         return $this->belongsTo(Merchant::class);
     }
-
+    public function qrCodes(): HasMany
+    {
+        return $this->hasMany(MerchantQrCode::class);
+    }
     public function versions(): HasMany
     {
         return $this->hasMany(LoyaltyProgramVersion::class);
