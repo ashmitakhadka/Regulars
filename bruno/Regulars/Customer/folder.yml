@@ -1,0 +1,25 @@
+info:
+  name: Customer
+  type: folder
+
+request:
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: http://localhost:5173
+    - name: Referer
+      value: http://localhost:5173
+    - name: Content-Type
+      value: application/json
+    - name: X-XSRF-TOKEN
+      value: eyJpdiI6ImVFMGZ6bjdKb3JhY3YzSFY2K0tYb2c9PSIsInZhbHVlIjoiZlpJUTl5eXNjM2Fyd1VwcytlOER6bFdGSGllOUhaajJreXRhT3RySGxyN3VJVVFkbmNNMitOU2twbkdqNmZUenU4QkNTTThSU25CMk5YaVpPM21RQlNVUmpqRTc0ckE1RGNSVFYzY0V2MnNGWHZNRnFRRzUvZlBBdWlOZkh5dW4iLCJtYWMiOiI2NjhiMGY4MmFjNzRkYzk5NmEyNzA1NjJjMjM0MzdjYWViZTMyNGU5OTc3ZWFhY2JkMDFlYTljZDY5ZGQxMWM2IiwidGFnIjoiIn0=
+  scripts:
+    - type: after-response
+      code: |-
+        const setCookie = res.getHeader("set-cookie") || [];
+        const raw = [].concat(setCookie).find(c => c.startsWith("XSRF-TOKEN="));
+        if (raw) {
+          const value = decodeURIComponent(raw.split(";")[0].replace("XSRF-TOKEN=", ""));
+          bru.setVar("xsrf", value);
+        }

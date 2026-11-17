@@ -1,0 +1,38 @@
+info:
+  name: 01 Register
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: http://localhost:8000/api/register/customer
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: http://localhost:5173
+    - name: Referer
+      value: http://localhost:5173
+    - name: X-XSRF-TOKEN
+      value: "{{xsrf_token}}"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Aayush Sharma",
+        "email": "customer@example.com",
+        "password": "Password123!",
+        "password_confirmation": "Password123!",
+        "phone": "+977-9812345678"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+

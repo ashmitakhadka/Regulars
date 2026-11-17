@@ -30,3 +30,5 @@ Route::delete('/merchant/reward-programs/{id}', [MerchantRewardProgramController
 
 });
 
+require __DIR__ . '/api/customer.php';
+

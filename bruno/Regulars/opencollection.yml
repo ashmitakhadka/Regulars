@@ -2,6 +2,34 @@ opencollection: 1.0.0
 
 info:
   name: Regulars
+config:
+  proxy:
+    inherit: true
+    config:
+      protocol: http
+      hostname: ""
+      port: ""
+      auth:
+        username: ""
+        password: ""
+      bypassProxy: ""
+
+request:
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: http://localhost:5173
+    - name: Referer
+      value: http://localhost:5173
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+
+        if (xsrfToken) {
+          req.setHeader("X-XSRF-TOKEN", decodeURIComponent(xsrfToken));
+        }
 bundled: false
 extensions:
   bruno:

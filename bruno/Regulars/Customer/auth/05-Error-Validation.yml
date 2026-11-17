@@ -1,0 +1,38 @@
+info:
+  name: 05 Error - Validation (422)
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: http://localhost:8000/api/register/customer
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: http://localhost:5173
+    - name: Referer
+      value: http://localhost:5173
+    - name: X-XSRF-TOKEN
+      value: "{{xsrf_token}}"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "",
+        "email": "invalid-email",
+        "password": "short",
+        "password_confirmation": "mismatch",
+        "phone": "014234567"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+

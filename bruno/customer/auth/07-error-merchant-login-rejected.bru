@@ -1,0 +1,27 @@
+meta {
+  name: 07 Error - Merchant Login Rejected (401)
+  type: http
+  seq: 8
+}
+
+post {
+  url: http://localhost:8000/api/login/customer
+  body: json
+  auth: inherit
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+  Origin: http://localhost:5173
+  Referer: http://localhost:5173
+  X-XSRF-TOKEN: {{xsrf_token}}
+}
+
+body:json {
+  {
+    "email": "kashmita874@gmail.com",
+    "password": "123456789"
+  }
+}
+
