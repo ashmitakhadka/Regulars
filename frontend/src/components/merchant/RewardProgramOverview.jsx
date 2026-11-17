@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGift, faArrowRight } from "@fortawesome/free-solid-svg-icons";
 
@@ -43,13 +44,13 @@ export const RewardProgramOverview = () => {
       </div>
 
       <div className="mt-7 border-t border-[#F4F0EA] pt-5">
-        <button
-          type="button"
-          className="flex items-center gap-2 text-sm font-semibold text-[#A51D27] transition hover:gap-3"
+        <Link
+          to="/merchant/reward-programs"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-[#A51D27] transition hover:gap-3"
         >
           Manage reward program
           <FontAwesomeIcon icon={faArrowRight} />
-        </button>
+        </Link>
       </div>
     </section>
   );
