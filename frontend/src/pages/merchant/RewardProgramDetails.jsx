@@ -1,10 +1,16 @@
 import { useEffect, useState, useCallback } from "react";
 import { Link, useParams } from "react-router-dom";
+import toast from "react-hot-toast";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowLeft,
   faPen,
   faRotateRight,
+  faPowerOff,
+  faPause,
+  faPlay,
+  faCircleExclamation,
+  faCheck,
 } from "@fortawesome/free-solid-svg-icons";
 import { MerchantSidebar } from "../../components/merchant/MerchantSidebar";
 import { RewardProgramDetailsCard } from "../../components/merchant/rewards/RewardProgramDetailsCard";
@@ -17,6 +23,10 @@ export const RewardProgramDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Status toggle modal state
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
   const fetchProgram = useCallback(async () => {
     if (!id) return;
     setLoading(true);
@@ -27,7 +37,9 @@ export const RewardProgramDetails = () => {
     } catch (err) {
       console.error("Failed to fetch program details:", err);
       if (err.response?.status === 404) {
-        setError("Reward program not found. It may have been archived or does not exist.");
+        setError(
+          "Reward program not found. It may have been archived or does not exist.",
+        );
       } else {
         const message =
           err.response?.data?.message ||
@@ -44,6 +56,40 @@ export const RewardProgramDetails = () => {
   }, [fetchProgram]);
 
   const isArchived = program?.status === "archived";
+  const isActive = program?.status === "active";
+  const targetStatus = isActive ? "inactive" : "active";
+
+  const handleToggleStatus = async () => {
+    if (!program || isArchived) return;
+
+    setIsUpdatingStatus(true);
+    try {
+      const response = await rewardProgramService.updateProgramStatus(
+        program.id,
+        targetStatus,
+      );
+
+      // Update local state immediately
+      setProgram((prev) => ({
+        ...prev,
+        status: targetStatus,
+      }));
+
+      toast.success(
+        response.message ||
+          `Program has been ${targetStatus === "active" ? "activated" : "deactivated"} successfully.`,
+      );
+      setStatusModalOpen(false);
+    } catch (err) {
+      console.error("Status update error:", err);
+      const message =
+        err.response?.data?.message ||
+        "Failed to update program status. Please try again.";
+      toast.error(message);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-white md:flex-row">
@@ -124,20 +170,104 @@ export const RewardProgramDetails = () => {
                 </Button>
 
                 {!isArchived && (
-                  <Button
-                    to={`/merchant/reward-programs/${program.id}/edit`}
-                    variant="primary"
-                    size="sm"
-                  >
-                    <FontAwesomeIcon icon={faPen} />
-                    <span>Edit Program</span>
-                  </Button>
+                  <>
+                    <Button
+                      variant={isActive ? "secondary" : "primary"}
+                      size="sm"
+                      onClick={() => setStatusModalOpen(true)}
+                      title={isActive ? "Deactivate program" : "Activate program"}
+                    >
+                      <FontAwesomeIcon icon={isActive ? faPause : faPlay} />
+                      <span>{isActive ? "Deactivate" : "Activate"}</span>
+                    </Button>
+
+                    <Button
+                      to={`/merchant/reward-programs/${program.id}/edit`}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <FontAwesomeIcon icon={faPen} />
+                      <span>Edit Program</span>
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
 
             {/* Program Details Presentation */}
             <RewardProgramDetailsCard program={program} />
+
+            {/* Status Change Confirmation Modal */}
+            {statusModalOpen && (
+              <div
+                className="fixed inset-0 z-50 flex items-center justify-center bg-[#23140C]/50 p-4 backdrop-blur-xs"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="status-modal-title"
+              >
+                <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`flex h-11 w-11 items-center justify-center rounded-xl ${
+                        isActive
+                          ? "bg-amber-100 text-amber-800"
+                          : "bg-emerald-100 text-emerald-800"
+                      }`}
+                    >
+                      <FontAwesomeIcon
+                        icon={isActive ? faPause : faPlay}
+                        className="h-5 w-5"
+                      />
+                    </div>
+                    <div>
+                      <h3
+                        id="status-modal-title"
+                        className="font-display text-lg font-bold text-[#23140C]"
+                      >
+                        {isActive ? "Deactivate Program?" : "Activate Program?"}
+                      </h3>
+                      <p className="text-xs text-[#23140C]/60">
+                        {program.name}
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="mt-4 text-xs leading-relaxed text-[#23140C]/75">
+                    {isActive
+                      ? "When deactivated, customers will temporarily stop earning stamps for this program during counter visits. Existing cards and earned vouchers remain completely intact. You can reactivate anytime."
+                      : "Once activated, this loyalty program will become immediately active. Customers will begin earning stamps towards this reward upon qualifying visits or purchases."}
+                  </p>
+
+                  <div className="mt-6 flex items-center justify-end gap-3 border-t border-[#F4F0EA] pt-4">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setStatusModalOpen(false)}
+                      disabled={isUpdatingStatus}
+                    >
+                      Cancel
+                    </Button>
+
+                    <Button
+                      variant={isActive ? "secondary" : "primary"}
+                      size="sm"
+                      onClick={handleToggleStatus}
+                      loading={isUpdatingStatus}
+                      disabled={isUpdatingStatus}
+                    >
+                      <FontAwesomeIcon icon={faCheck} />
+                      <span>
+                        {isUpdatingStatus
+                          ? "Updating..."
+                          : isActive
+                          ? "Confirm Deactivate"
+                          : "Confirm Activate"}
+                      </span>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
