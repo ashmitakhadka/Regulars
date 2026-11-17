@@ -21,6 +21,7 @@ import UIPreview from "./pages/UIPreview";
 import CustomerLayout from "./layouts/CustomerLayout";
 import { MerchantDashboard } from "./pages/merchant/MerchantDashboard";
 import { RewardPrograms } from "./pages/merchant/RewardPrograms";
+import { CreateRewardProgram } from "./pages/merchant/CreateRewardProgram";
 
 const MerchantProtectedRoute = ({ children }) => {
   const { user, merchant, loading } = useAuth();
@@ -80,6 +81,14 @@ const router = createBrowserRouter([
     element: (
       <MerchantProtectedRoute>
         <RewardPrograms />
+      </MerchantProtectedRoute>
+    ),
+  },
+  {
+    path: "/merchant/reward-programs/create",
+    element: (
+      <MerchantProtectedRoute>
+        <CreateRewardProgram />
       </MerchantProtectedRoute>
     ),
   },
