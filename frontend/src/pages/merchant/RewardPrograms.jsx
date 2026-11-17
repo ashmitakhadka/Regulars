@@ -1,5 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPlus,
@@ -17,7 +16,7 @@ export const RewardPrograms = () => {
   const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const fetchPrograms = useCallback(async () => {
+  const loadPrograms = async () => {
     setLoading(true);
     setError(null);
     try {
@@ -32,11 +31,38 @@ export const RewardPrograms = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    fetchPrograms();
-  }, [fetchPrograms]);
+    let ignore = false;
+
+    rewardProgramService
+      .getAllPrograms()
+      .then((response) => {
+        if (!ignore) {
+          setPrograms(response.data || []);
+          setError(null);
+        }
+      })
+      .catch((err) => {
+        if (!ignore) {
+          console.error("Failed to fetch reward programs:", err);
+          setError(
+            err.response?.data?.message ||
+              "Unable to load your reward programs. Please check your connection and try again.",
+          );
+        }
+      })
+      .finally(() => {
+        if (!ignore) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   // Filter programs based on status tab
   const filteredPrograms = programs.filter((program) => {
@@ -83,7 +109,7 @@ export const RewardPrograms = () => {
             <Button
               variant="secondary"
               size="sm"
-              onClick={fetchPrograms}
+              onClick={loadPrograms}
               disabled={loading}
               title="Refresh programs"
             >
@@ -160,7 +186,7 @@ export const RewardPrograms = () => {
               <ErrorState
                 title="Could not load reward programs"
                 message={error}
-                onRetry={fetchPrograms}
+                onRetry={loadPrograms}
               />
             </div>
           )}

@@ -5,8 +5,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faStar,
   faGift,
-  faClock,
-  faCalendarDays,
   faTag,
   faCheck,
   faInfoCircle,
@@ -14,7 +12,7 @@ import {
 import { Button } from "../../ui";
 
 // Validation Schema matching Laravel backend rules exactly
-export const rewardProgramSchema = z.object({
+const rewardProgramSchema = z.object({
   name: z
     .string()
     .trim()

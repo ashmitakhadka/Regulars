@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -55,38 +55,45 @@ export const EditRewardProgram = () => {
     },
   });
 
-  const fetchProgram = useCallback(async () => {
-    if (!id) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await rewardProgramService.getProgramDetails(id);
-      const data = response.data;
-      setProgram(data);
-
-      // Prepopulate form
-      reset({
-        name: data.name || "",
-        description: data.description || "",
-      });
-    } catch (err) {
-      console.error("Failed to load program for editing:", err);
-      if (err.response?.status === 404) {
-        setError("Reward program not found.");
-      } else {
-        const message =
-          err.response?.data?.message ||
-          "Unable to load program for editing. Please try again.";
-        setError(message);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [id, reset]);
-
   useEffect(() => {
-    fetchProgram();
-  }, [fetchProgram]);
+    let ignore = false;
+
+    rewardProgramService
+      .getProgramDetails(id)
+      .then((response) => {
+        if (!ignore) {
+          const data = response.data;
+          setProgram(data);
+          reset({
+            name: data.name || "",
+            description: data.description || "",
+          });
+          setError(null);
+        }
+      })
+      .catch((err) => {
+        if (!ignore) {
+          console.error("Failed to load program for editing:", err);
+          if (err.response?.status === 404) {
+            setError("Reward program not found.");
+          } else {
+            setError(
+              err.response?.data?.message ||
+                "Unable to load program for editing. Please try again.",
+            );
+          }
+        }
+      })
+      .finally(() => {
+        if (!ignore) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [id, reset]);
 
   const handleUpdate = async (data) => {
     setIsSubmitting(true);

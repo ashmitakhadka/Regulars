@@ -6,8 +6,6 @@ import {
   faCalendarDays,
   faBarcode,
   faCodeBranch,
-  faCheckCircle,
-  faCircleCheck,
 } from "@fortawesome/free-solid-svg-icons";
 import { RewardProgramStatus } from "./RewardProgramStatus";
 
