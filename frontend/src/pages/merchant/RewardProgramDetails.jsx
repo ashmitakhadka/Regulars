@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -11,14 +11,17 @@ import {
   faPlay,
   faCircleExclamation,
   faCheck,
+  faBoxArchive,
 } from "@fortawesome/free-solid-svg-icons";
 import { MerchantSidebar } from "../../components/merchant/MerchantSidebar";
 import { RewardProgramDetailsCard } from "../../components/merchant/rewards/RewardProgramDetailsCard";
+import { ArchiveConfirmation } from "../../components/merchant/rewards/ArchiveConfirmation";
 import { Spinner, ErrorState, Button } from "../../components/ui";
 import { rewardProgramService } from "../../services/rewardProgramService";
 
 export const RewardProgramDetails = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [program, setProgram] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -26,6 +29,10 @@ export const RewardProgramDetails = () => {
   // Status toggle modal state
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
+  // Archive modal state
+  const [archiveModalOpen, setArchiveModalOpen] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
 
   const fetchProgram = useCallback(async () => {
     if (!id) return;
@@ -88,6 +95,29 @@ export const RewardProgramDetails = () => {
       toast.error(message);
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleArchive = async () => {
+    if (!program || isArchived) return;
+
+    setIsArchiving(true);
+    try {
+      const response = await rewardProgramService.archiveProgram(program.id);
+      toast.success(
+        response.message || "Reward program archived successfully.",
+      );
+      setArchiveModalOpen(false);
+      // Navigate back to listing where it is removed from active and moved to archived tab
+      navigate("/merchant/reward-programs", { replace: true });
+    } catch (err) {
+      console.error("Archive program failed:", err);
+      const message =
+        err.response?.data?.message ||
+        "Unable to archive program. Please try again.";
+      toast.error(message);
+    } finally {
+      setIsArchiving(false);
     }
   };
 
@@ -189,6 +219,17 @@ export const RewardProgramDetails = () => {
                       <FontAwesomeIcon icon={faPen} />
                       <span>Edit Program</span>
                     </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setArchiveModalOpen(true)}
+                      className="text-amber-800 hover:bg-amber-50"
+                      title="Archive this program"
+                    >
+                      <FontAwesomeIcon icon={faBoxArchive} />
+                      <span>Archive</span>
+                    </Button>
                   </>
                 )}
               </div>
@@ -268,6 +309,15 @@ export const RewardProgramDetails = () => {
                 </div>
               </div>
             )}
+
+            {/* Archive Confirmation Modal */}
+            <ArchiveConfirmation
+              isOpen={archiveModalOpen}
+              programName={program.name}
+              onConfirm={handleArchive}
+              onCancel={() => setArchiveModalOpen(false)}
+              isArchiving={isArchiving}
+            />
           </div>
         )}
       </main>
