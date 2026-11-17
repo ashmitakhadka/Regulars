@@ -1,0 +1,32 @@
+info:
+  name: CreateProgram
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: http://localhost:8000/api/merchant/reward-programs
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Dummy Test Rewards",
+        "description": "Temporary program for testing archive functionality.",
+        "earning_type": "visit",
+        "threshold": 3,
+        "stamps_awarded": 1,
+        "daily_stamp_limit": 1,
+        "reward_title": "Free Test Drink",
+        "reward_description": "A test reward.",
+        "reward_type": "free_item",
+        "reward_value": null,
+        "voucher_validity_days": 30
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

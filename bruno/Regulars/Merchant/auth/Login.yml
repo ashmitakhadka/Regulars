@@ -1,0 +1,30 @@
+info:
+  name: Login
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: http://localhost:8000/api/login/merchant
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: http://localhost:5173
+    - name: Referer
+      value: http://localhost:5173
+  body:
+    type: json
+    data: |-
+      {
+        "email": "kashmita874@gmail.com",
+        "password": "123456789"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
