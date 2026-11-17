@@ -23,6 +23,7 @@ import { MerchantDashboard } from "./pages/merchant/MerchantDashboard";
 import { RewardPrograms } from "./pages/merchant/RewardPrograms";
 import { CreateRewardProgram } from "./pages/merchant/CreateRewardProgram";
 import { RewardProgramDetails } from "./pages/merchant/RewardProgramDetails";
+import { EditRewardProgram } from "./pages/merchant/EditRewardProgram";
 
 const MerchantProtectedRoute = ({ children }) => {
   const { user, merchant, loading } = useAuth();
@@ -90,6 +91,14 @@ const router = createBrowserRouter([
     element: (
       <MerchantProtectedRoute>
         <CreateRewardProgram />
+      </MerchantProtectedRoute>
+    ),
+  },
+  {
+    path: "/merchant/reward-programs/:id/edit",
+    element: (
+      <MerchantProtectedRoute>
+        <EditRewardProgram />
       </MerchantProtectedRoute>
     ),
   },
