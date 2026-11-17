@@ -20,6 +20,10 @@ import Profile from "./pages/customer/Profile";
 import UIPreview from "./pages/UIPreview";
 import CustomerLayout from "./layouts/CustomerLayout";
 import { MerchantDashboard } from "./pages/merchant/MerchantDashboard";
+import { RewardPrograms } from "./pages/merchant/RewardPrograms";
+import { CreateRewardProgram } from "./pages/merchant/CreateRewardProgram";
+import { RewardProgramDetails } from "./pages/merchant/RewardProgramDetails";
+import { EditRewardProgram } from "./pages/merchant/EditRewardProgram";
 
 const MerchantProtectedRoute = ({ children }) => {
   const { user, merchant, loading } = useAuth();
@@ -63,8 +67,6 @@ const router = createBrowserRouter([
     ],
   },
 
-  // Fallback
-  { path: "*", element: <Navigate to="/" replace /> },
   { path: "/merchant/register", element: <MerchantRegistration /> },
   { path: "/merchant/login", element: <MerchantLogin /> },
 
@@ -76,6 +78,45 @@ const router = createBrowserRouter([
       </MerchantProtectedRoute>
     ),
   },
+  {
+    path: "/merchant/reward-programs",
+    element: (
+      <MerchantProtectedRoute>
+        <RewardPrograms />
+      </MerchantProtectedRoute>
+    ),
+  },
+  {
+    path: "/merchant/reward-programs/create",
+    element: (
+      <MerchantProtectedRoute>
+        <CreateRewardProgram />
+      </MerchantProtectedRoute>
+    ),
+  },
+  {
+    path: "/merchant/reward-programs/:id/edit",
+    element: (
+      <MerchantProtectedRoute>
+        <EditRewardProgram />
+      </MerchantProtectedRoute>
+    ),
+  },
+  {
+    path: "/merchant/reward-programs/:id",
+    element: (
+      <MerchantProtectedRoute>
+        <RewardProgramDetails />
+      </MerchantProtectedRoute>
+    ),
+  },
+  {
+    path: "/merchant/rewards",
+    element: <Navigate to="/merchant/reward-programs" replace />,
+  },
+
+  // Fallback (placed after explicit routes)
+  { path: "*", element: <Navigate to="/" replace /> },
 ]);
 
 export const App = () => {

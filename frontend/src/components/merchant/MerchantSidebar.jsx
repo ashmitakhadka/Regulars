@@ -20,7 +20,7 @@ import { Logo } from "../ui";
 
 const navigationItems = [
   { label: "Dashboard", path: "/merchant/dashboard", icon: faGauge },
-  { label: "Reward Program", path: "/merchant/rewards", icon: faGift },
+  { label: "Reward Programs", path: "/merchant/reward-programs", icon: faGift },
   { label: "Customers", path: "/merchant/customers", icon: faUsers },
   { label: "QR Code", path: "/merchant/qr-code", icon: faQrcode },
   { label: "Vouchers", path: "/merchant/vouchers", icon: faTicket },
