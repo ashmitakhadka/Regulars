@@ -353,6 +353,10 @@ export const Products = () => {
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex min-w-0 items-center gap-3">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F4F0EA] text-[#23140C]">
+                              <FontAwesomeIcon icon={faBox} />
+                            </div>
+
                             <div className="min-w-0">
                               <h3 className="truncate font-semibold text-[#23140C]">
                                 {product.name}
