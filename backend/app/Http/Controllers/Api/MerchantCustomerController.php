@@ -9,6 +9,8 @@ use App\Models\LoyaltyProgram;
 use App\Models\StampCard;
 use App\Models\UserMerchantStat;
 use Illuminate\Support\Facades\DB;
+use App\Models\StampTransaction;
+use App\Models\Voucher;
 
 class MerchantCustomerController extends Controller
 {
@@ -110,6 +112,207 @@ class MerchantCustomerController extends Controller
             ],
         ]);
     }
+
+
+public function getCustomerDetails(Request $request, $customerId)
+{
+    $user = $request->user();
+
+    // Verify merchant account.
+    if ($user->role !== 'merchant') {
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthorized merchant access.',
+        ], 403);
+    }
+
+    $merchant = $user->merchant()->first();
+
+    if (!$merchant) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Merchant business not found.',
+        ], 404);
+    }
+
+    // Find customer enrolled in this merchant's programs.
+    $customer = User::query()
+        ->where('role', 'customer')
+        ->where('id', $customerId)
+        ->whereHas('stampCards', function ($query) use ($merchant) {
+            $query->whereHas('loyaltyProgram', function ($programQuery) use ($merchant) {
+                $programQuery->where('merchant_id', $merchant->id);
+            });
+        })
+        ->with([
+            'stampCards' => function ($query) use ($merchant) {
+                $query->whereHas('loyaltyProgram', function ($programQuery) use ($merchant) {
+                    $programQuery->where('merchant_id', $merchant->id);
+                })->with('loyaltyProgram:id,name');
+            },
+            'merchantStats' => function ($query) use ($merchant) {
+                $query->where('merchant_id', $merchant->id);
+            },
+        ])
+        ->first();
+
+    if (!$customer) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Customer not found for this merchant.',
+        ], 404);
+    }
+
+    $stats = $customer->merchantStats->first();
+
+    return response()->json([
+        'success' => true,
+        'data' => [
+            'id' => $customer->id,
+            'name' => $customer->name,
+            'email' => $customer->email,
+            'phone' => $customer->phone,
+            'customer_code' => $customer->customer_code,
+
+            'current_streak' => $stats?->current_streak ?? 0,
+            'longest_streak' => $stats?->longest_streak ?? 0,
+
+            'programs' => $customer->stampCards->map(function ($card) {
+                return [
+                    'stamp_card_id' => $card->id,
+                    'program_id' => $card->loyalty_program_id,
+                    'program_name' => $card->loyaltyProgram->name,
+                    'stamps_earned' => $card->stamps_earned,
+                    'status' => $card->status,
+                    'started_at' => $card->started_at,
+                ];
+            })->values(),
+        ],
+    ]);
+}
+
+
+
+public function getCustomerActivity(Request $request, $customerId)
+{
+    $user = $request->user();
+
+    // Verify merchant account.
+    if ($user->role !== 'merchant') {
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthorized merchant access.',
+        ], 403);
+    }
+
+    $merchant = $user->merchant()->first();
+
+    if (!$merchant) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Merchant business not found.',
+        ], 404);
+    }
+
+    // Verify customer belongs to this merchant.
+    $customer = User::query()
+        ->where('role', 'customer')
+        ->where('id', $customerId)
+        ->whereHas('stampCards', function ($query) use ($merchant) {
+            $query->whereHas('loyaltyProgram', function ($programQuery) use ($merchant) {
+                $programQuery->where('merchant_id', $merchant->id);
+            });
+        })
+        ->first();
+
+    if (!$customer) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Customer not found for this merchant.',
+        ], 404);
+    }
+
+    // Retrieve stamp transactions belonging to this merchant.
+    $stampTransactions = StampTransaction::query()
+        ->whereHas('stampCard', function ($query) use ($customer, $merchant) {
+            $query->where('customer_id', $customer->id)
+                ->whereHas('loyaltyProgram', function ($programQuery) use ($merchant) {
+                    $programQuery->where('merchant_id', $merchant->id);
+                });
+        })
+        ->with('stampCard.loyaltyProgram:id,name')
+        ->get()
+        ->map(function ($transaction) {
+            return [
+                'type' => 'stamp_earned',
+                'description' => $transaction->stamps_awarded . ' stamp(s) earned',
+                'stamp_card_id' => $transaction->stamp_card_id,
+                'program_name' => $transaction->stampCard->loyaltyProgram->name,
+                'stamps_awarded' => $transaction->stamps_awarded,
+                'source_type' => $transaction->source_type,
+                'source_id' => $transaction->source_id,
+                'occurred_at' => $transaction->created_at?->toISOString(),
+            ];
+        });
+
+    // Retrieve vouchers issued by this merchant.
+    $vouchers = Voucher::query()
+        ->where('customer_id', $customer->id)
+        ->where('merchant_id', $merchant->id)
+        ->with('redemption.redeemer:id,name')
+        ->get();
+
+    $voucherActivities = collect();
+
+    foreach ($vouchers as $voucher) {
+
+        // Voucher issued activity.
+        $voucherActivities->push([
+            'type' => 'voucher_issued',
+            'description' => 'Reward voucher issued: ' . $voucher->reward_title,
+            'voucher_code' => $voucher->code,
+            'reward_title' => $voucher->reward_title,
+            'reward_description' => $voucher->reward_description,
+            'reward_type' => $voucher->reward_type,
+            'reward_value' => $voucher->reward_value,
+            'status' => $voucher->status,
+            'issued_at' => $voucher->issued_at?->toISOString(),
+            'expires_at' => $voucher->expires_at?->toISOString(),
+            'occurred_at' => $voucher->issued_at?->toISOString(),
+        ]);
+
+        // Voucher redeemed activity.
+        if ($voucher->redemption) {
+            $voucherActivities->push([
+                'type' => 'voucher_redeemed',
+                'description' => 'Reward voucher redeemed: ' . $voucher->reward_title,
+                'voucher_code' => $voucher->code,
+                'reward_title' => $voucher->reward_title,
+                'redeemed_by' => $voucher->redemption->redeemer?->name,
+                'occurred_at' => $voucher->redemption->redeemed_at?->toISOString(),
+            ]);
+        }
+    }
+
+    // Combine and sort all activities chronologically.
+    $activities = $stampTransactions
+        ->concat($voucherActivities)
+        ->sortByDesc('occurred_at')
+        ->values();
+
+    return response()->json([
+        'success' => true,
+        'data' => [
+            'customer' => [
+                'id' => $customer->id,
+                'name' => $customer->name,
+                'customer_code' => $customer->customer_code,
+            ],
+            'activities' => $activities,
+        ],
+    ]);
+}
+
 
 
 
