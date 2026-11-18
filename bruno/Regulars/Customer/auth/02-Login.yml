@@ -6,17 +6,6 @@ info:
 http:
   method: POST
   url: http://localhost:8000/api/login/customer
-  headers:
-    - name: Accept
-      value: application/json
-    - name: Content-Type
-      value: application/json
-    - name: Origin
-      value: http://localhost:5173
-    - name: Referer
-      value: http://localhost:5173
-    - name: X-XSRF-TOKEN
-      value: eyJpdiI6ImVFMGZ6bjdKb3JhY3YzSFY2K0tYb2c9PSIsInZhbHVlIjoiZlpJUTl5eXNjM2Fyd1VwcytlOER6bFdGSGllOUhaajJreXRhT3RySGxyN3VJVVFkbmNNMitOU2twbkdqNmZUenU4QkNTTThSU25CMk5YaVpPM21RQlNVUmpqRTc0ckE1RGNSVFYzY0V2MnNGWHZNRnFRRzUvZlBBdWlOZkh5dW4iLCJtYWMiOiI2NjhiMGY4MmFjNzRkYzk5NmEyNzA1NjJjMjM0MzdjYWViZTMyNGU5OTc3ZWFhY2JkMDFlYTljZDY5ZGQxMWM2IiwidGFnIjoiIn0=
   body:
     type: json
     data: |-

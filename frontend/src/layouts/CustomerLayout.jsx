@@ -1,7 +1,13 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faWallet, faTicket, faUser } from "@fortawesome/free-solid-svg-icons";
+import {
+  faWallet,
+  faTicket,
+  faUser,
+  faArrowRightFromBracket,
+} from "@fortawesome/free-solid-svg-icons";
 import { Logo } from "../components/ui/Logo";
+import { useCustomerAuth } from "../auth/CustomerAuthContext";
 
 const navItems = [
   { to: "/wallet", label: "Wallet", icon: faWallet },
@@ -10,6 +16,14 @@ const navItems = [
 ];
 
 export const CustomerLayout = () => {
+  const { customer, logout } = useCustomerAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
+
   return (
     <div className="min-h-screen bg-white text-ink flex flex-col antialiased">
       {/* Top Header (Desktop & Mobile) */}
@@ -17,25 +31,49 @@ export const CustomerLayout = () => {
         <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-4 sm:px-6">
           <Logo size="sm" to="/wallet" />
 
-          {/* Desktop Navigation Links */}
-          <nav className="hidden sm:flex items-center gap-6" aria-label="Customer navigation">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  `flex items-center gap-2 py-2 text-sm font-semibold transition ${
-                    isActive
-                      ? "text-brand-800 border-b-2 border-brand-800"
-                      : "text-ink hover:text-brand-800"
-                  }`
-                }
+          {/* Desktop Navigation Links & User Actions */}
+          <div className="flex items-center gap-6">
+            <nav className="hidden sm:flex items-center gap-6" aria-label="Customer navigation">
+              {navItems.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) =>
+                    `flex items-center gap-2 py-2 text-sm font-semibold transition ${
+                      isActive
+                        ? "text-brand-800 border-b-2 border-brand-800"
+                        : "text-ink hover:text-brand-800"
+                    }`
+                  }
+                >
+                  <FontAwesomeIcon icon={item.icon} className="text-sm" />
+                  <span>{item.label}</span>
+                </NavLink>
+              ))}
+            </nav>
+
+            {/* Customer Code / Name & Logout Action */}
+            <div className="flex items-center gap-3">
+              {customer && (
+                <span
+                  title={customer.name}
+                  className="hidden sm:inline-block rounded-md bg-blush-100 px-2.5 py-1 text-xs font-mono font-bold text-brand-900 truncate max-w-[150px]"
+                >
+                  {customer.customer_code || customer.name}
+                </span>
+              )}
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-ink-soft hover:bg-blush-100 hover:text-brand-900 transition focus-visible:outline-brand-800"
+                title="Log out"
               >
-                <FontAwesomeIcon icon={item.icon} className="text-sm" />
-                <span>{item.label}</span>
-              </NavLink>
-            ))}
-          </nav>
+                <FontAwesomeIcon icon={faArrowRightFromBracket} className="text-xs" />
+                <span className="hidden sm:inline">Log Out</span>
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -73,4 +111,3 @@ export const CustomerLayout = () => {
 };
 
 export default CustomerLayout;
-

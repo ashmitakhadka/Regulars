@@ -6,17 +6,6 @@ info:
 http:
   method: POST
   url: http://localhost:8000/api/register/customer
-  headers:
-    - name: Accept
-      value: application/json
-    - name: Content-Type
-      value: application/json
-    - name: Origin
-      value: http://localhost:5173
-    - name: Referer
-      value: http://localhost:5173
-    - name: X-XSRF-TOKEN
-      value: "{{xsrf_token}}"
   body:
     type: json
     data: |-
@@ -35,4 +24,3 @@ settings:
   followRedirects: true
   maxRedirects: 5
   forwardAuthorizationHeader: false
-
