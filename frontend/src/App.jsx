@@ -20,6 +20,8 @@ import CardDetail from "./pages/customer/CardDetail";
 import Vouchers from "./pages/customer/Vouchers";
 import VoucherDetail from "./pages/customer/VoucherDetail";
 import Profile from "./pages/customer/Profile";
+import SignInChoice from "./pages/SignInChoice";
+import SignUpChoice from "./pages/SignUpChoice";
 import UIPreview from "./pages/UIPreview";
 import CustomerLayout from "./layouts/CustomerLayout";
 import { MerchantDashboard } from "./pages/merchant/MerchantDashboard";
@@ -56,6 +58,10 @@ const CustomerRoot = () => (
 const router = createBrowserRouter([
   // Landing Page
   { path: "/", element: <Home /> },
+
+  // Auth Choice Pages
+  { path: "/sign-in", element: <SignInChoice /> },
+  { path: "/sign-up", element: <SignUpChoice /> },
 
   // UI Component Preview
   { path: "/ui-preview", element: <UIPreview /> },

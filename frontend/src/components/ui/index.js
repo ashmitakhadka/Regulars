@@ -6,4 +6,5 @@ export { Tag } from "./Tag";
 export { Spinner } from "./Spinner";
 export { EmptyState } from "./EmptyState";
 export { ErrorState } from "./ErrorState";
-
+export { OptionCard } from "./OptionCard";
+export { AuthChoiceLayout } from "./AuthChoiceLayout";

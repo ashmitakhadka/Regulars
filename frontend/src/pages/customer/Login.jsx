@@ -94,19 +94,19 @@ export const Login = () => {
     : "/register";
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-4 py-12">
-      <div className="w-full max-w-[420px] text-center">
+    <div className="min-h-screen flex items-center justify-center bg-[#f8f5ef] px-4 py-10">
+      <div className="w-full max-w-md text-center">
         <div className="mb-6 flex justify-center">
           <Logo size="lg" to="/" />
         </div>
 
-        <Card>
-          <h1 className="font-display text-2xl font-extrabold text-brand-900 mb-1">
-            Customer Log In
-          </h1>
-          <p className="text-sm text-ink-soft mb-6 leading-relaxed">
-            Welcome back! Enter your details to access your cards and vouchers.
-          </p>
+        <Card padding="p-8" className="w-full max-w-md rounded-2xl bg-white shadow-lg text-left">
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-bold text-[#23140c]">Welcome Back!</h1>
+            <p className="mt-2 text-sm text-gray-500">
+              Log in to access your cards, streaks, and vouchers.
+            </p>
+          </div>
 
           {generalError && (
             <div
@@ -117,11 +117,11 @@ export const Login = () => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <Input
-              label="Email address"
+              label="Email Address"
               type="email"
-              placeholder="you@example.com"
+              placeholder="Enter your email"
               value={formData.email}
               onChange={handleChange("email")}
               error={errors.email}
@@ -154,12 +154,12 @@ export const Login = () => {
             </Button>
           </form>
 
-          <div className="mt-6 border-t border-blush-100 pt-5 text-center text-sm text-ink-soft space-y-2">
+          <div className="mt-6 border-t border-blush-100 pt-5 text-center text-sm text-gray-600 space-y-2">
             <p>
               Don&apos;t have an account?{" "}
               <Link
                 to={registerHref}
-                className="font-bold text-brand-800 hover:text-brand-900 hover:underline transition"
+                className="font-semibold text-brand-800 hover:text-brand-900 hover:underline transition"
               >
                 Create an account
               </Link>
