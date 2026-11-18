@@ -21,7 +21,7 @@ export const ArchiveConfirmation = ({
       aria-modal="true"
       aria-labelledby="archive-modal-title"
     >
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl sm:p-7">
         {/* Header with Icon */}
         <div className="flex items-start gap-3.5">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-900">
@@ -30,36 +30,36 @@ export const ArchiveConfirmation = ({
           <div>
             <h3
               id="archive-modal-title"
-              className="font-display text-lg font-bold text-[#23140C]"
+              className="font-display text-[18px] font-bold text-[#23140C]"
             >
-              Archive Reward Program
+              Archive Loyalty Program
             </h3>
-            <p className="mt-0.5 text-xs text-[#23140C]/60">
+            <p className="mt-0.5 text-[13.5px] text-[#23140C]/75">
               {programName || "Selected loyalty program"}
             </p>
           </div>
         </div>
 
         {/* Informative Explanation */}
-        <div className="mt-4 rounded-xl border border-amber-200/80 bg-amber-50/70 p-3.5 text-xs text-amber-950">
-          <div className="flex items-start gap-2">
+        <div className="mt-4 rounded-xl border border-amber-200/80 bg-amber-50/70 p-4 text-[13.5px] text-amber-950">
+          <div className="flex items-start gap-2.5">
             <FontAwesomeIcon
               icon={faTriangleExclamation}
               className="mt-0.5 text-amber-700"
             />
-            <div className="space-y-1 leading-relaxed">
-              <p className="font-semibold">
-                This program will be archived, not deleted.
+            <div className="space-y-1.5 leading-relaxed">
+              <p className="font-semibold text-amber-950">
+                This loyalty program will be archived, not deleted.
               </p>
-              <p className="text-amber-900/80">
-                All historical customer stamp cards, transaction logs, and redeemed
+              <p className="text-amber-900/90 text-[13px]">
+                All historical customer loyalty cards, transaction logs, and redeemed
                 vouchers remain permanently protected in the system.
               </p>
             </div>
           </div>
         </div>
 
-        <p className="mt-3.5 text-xs leading-relaxed text-[#23140C]/75">
+        <p className="mt-3.5 text-[13.5px] leading-relaxed text-[#23140C]/85">
           Once archived, customers can no longer earn stamps under this program,
           and the program <strong>cannot be edited or reactivated</strong>.
         </p>

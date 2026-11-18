@@ -48,4 +48,8 @@ public function targetedOffers(): HasMany
 {
     return $this->hasMany(TargetedOffer::class, 'customer_id');
 }
+public function stampCards(): HasMany
+{
+    return $this->hasMany(StampCard::class, 'customer_id');
+}
 }

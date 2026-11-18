@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class EarningRule extends Model
 {
@@ -39,5 +40,15 @@ class EarningRule extends Model
             'earning_rule_id',
             'product_id'
         );
+    }
+
+    public function tiers(): HasMany
+    {
+        return $this->hasMany(EarningRuleTier::class);
+    }
+
+    public function productRules(): HasMany
+    {
+        return $this->hasMany(EarningRuleProduct::class);
     }
 }

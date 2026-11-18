@@ -25,10 +25,11 @@ import SignUpChoice from "./pages/SignUpChoice";
 import UIPreview from "./pages/UIPreview";
 import CustomerLayout from "./layouts/CustomerLayout";
 import { MerchantDashboard } from "./pages/merchant/MerchantDashboard";
-import { RewardPrograms } from "./pages/merchant/RewardPrograms";
-import { CreateRewardProgram } from "./pages/merchant/CreateRewardProgram";
-import { RewardProgramDetails } from "./pages/merchant/RewardProgramDetails";
-import { EditRewardProgram } from "./pages/merchant/EditRewardProgram";
+import { LoyaltyPrograms } from "./pages/merchant/LoyaltyPrograms";
+import { CreateLoyaltyProgram } from "./pages/merchant/CreateLoyaltyProgram";
+import { LoyaltyProgramDetails } from "./pages/merchant/LoyaltyProgramDetails";
+import { EditLoyaltyProgram } from "./pages/merchant/EditLoyaltyProgram";
+import MerchantQrCode from "./components/merchant/MerchantQrCode";
 
 const MerchantProtectedRoute = ({ children }) => {
   const { user, merchant, loading } = useAuth();
@@ -103,27 +104,55 @@ const router = createBrowserRouter([
       </MerchantProtectedRoute>
     ),
   },
+
+  // Merchant Loyalty Programs Routes
   {
-    path: "/merchant/reward-programs",
+    path: "/merchant/loyalty-programs",
     element: (
       <MerchantProtectedRoute>
-        <RewardPrograms />
+        <LoyaltyPrograms />
       </MerchantProtectedRoute>
     ),
   },
   {
-    path: "/merchant/reward-programs/create",
+    path: "/merchant/loyalty-programs/create",
     element: (
       <MerchantProtectedRoute>
-        <CreateRewardProgram />
+        <CreateLoyaltyProgram />
       </MerchantProtectedRoute>
     ),
+  },
+  {
+    path: "/merchant/loyalty-programs/:id/edit",
+    element: (
+      <MerchantProtectedRoute>
+        <EditLoyaltyProgram />
+      </MerchantProtectedRoute>
+    ),
+  },
+  {
+    path: "/merchant/loyalty-programs/:id",
+    element: (
+      <MerchantProtectedRoute>
+        <LoyaltyProgramDetails />
+      </MerchantProtectedRoute>
+    ),
+  },
+
+  // Legacy Aliases and Redirects for Backward Compatibility
+  {
+    path: "/merchant/reward-programs",
+    element: <Navigate to="/merchant/loyalty-programs" replace />,
+  },
+  {
+    path: "/merchant/reward-programs/create",
+    element: <Navigate to="/merchant/loyalty-programs/create" replace />,
   },
   {
     path: "/merchant/reward-programs/:id/edit",
     element: (
       <MerchantProtectedRoute>
-        <EditRewardProgram />
+        <EditLoyaltyProgram />
       </MerchantProtectedRoute>
     ),
   },
@@ -131,13 +160,21 @@ const router = createBrowserRouter([
     path: "/merchant/reward-programs/:id",
     element: (
       <MerchantProtectedRoute>
-        <RewardProgramDetails />
+        <LoyaltyProgramDetails />
       </MerchantProtectedRoute>
     ),
   },
   {
     path: "/merchant/rewards",
-    element: <Navigate to="/merchant/reward-programs" replace />,
+    element: <Navigate to="/merchant/loyalty-programs" replace />,
+  },
+  {
+    path: "/merchant/qr-code",
+    element: (
+      <MerchantProtectedRoute>
+        <MerchantQrCode />
+      </MerchantProtectedRoute>
+    ),
   },
 
   // Fallback (placed after explicit routes)
