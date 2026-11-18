@@ -10,17 +10,38 @@ http:
     type: json
     data: |-
       {
-        "name": "Dummy Test Rewards",
-        "description": "Temporary program for testing archive functionality.",
-        "earning_type": "visit",
-        "threshold": 3,
-        "stamps_awarded": 1,
-        "daily_stamp_limit": 1,
-        "reward_title": "Free Test Drink",
-        "reward_description": "A test reward.",
-        "reward_type": "free_item",
-        "reward_value": null,
-        "voucher_validity_days": 30
+          "name": "Quantity Rewards",
+          "description": "Earn rewards by purchasing specific product quantities.",
+          "earning_type": "quantity",
+          "product_rules": [
+              {
+                  "product_id": 1,
+                  "quantity_required": 3,
+                  "reward_title": "Free Coffee",
+                  "reward_description": "Get one complimentary coffee.",
+                  "reward_type": "free_product",
+                  "reward_value": 0,
+                  "voucher_validity_days": 30
+              },
+              {
+                  "product_id": 2,
+                  "quantity_required": 2,
+                  "reward_title": "Free Sandwich",
+                  "reward_description": "Get one complimentary sandwich.",
+                  "reward_type": "free_product",
+                  "reward_value": 0,
+                  "voucher_validity_days": 30
+              },
+              {
+                  "product_id": 3,
+                  "quantity_required": 5,
+                  "reward_title": "Free Pastry",
+                  "reward_description": "Get one complimentary pastry.",
+                  "reward_type": "free_product",
+                  "reward_value": 0,
+                  "voucher_validity_days": 30
+              }
+          ]
       }
   auth: inherit
 

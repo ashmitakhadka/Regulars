@@ -1,0 +1,22 @@
+info:
+  name: RedeemVoucher
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:8000	/api/merchant/vouchers/redeem
+  body:
+    type: json
+    data: |-
+      {
+          "code": "UOLCAEHC4EGK"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
