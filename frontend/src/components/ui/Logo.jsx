@@ -6,17 +6,17 @@ const sizes = {
   sm: {
     text: "text-xl",
     icon: "text-lg",
-    gap: "gap-1.5",
+    gap: "gap-0.5",
   },
   md: {
     text: "text-2xl",
     icon: "text-xl",
-    gap: "gap-2",
+    gap: "gap-1",
   },
   lg: {
     text: "text-3xl sm:text-4xl",
     icon: "text-2xl sm:text-3xl",
-    gap: "gap-2.5",
+    gap: "gap-1",
   },
 };
 
@@ -30,7 +30,6 @@ export const Logo = ({
   const currentSize = sizes[size] || sizes.md;
   const textColor = light ? "text-white" : "text-brand-900";
   const iconColor = light ? "text-brand-500" : "text-brand-800";
-  const dotColor = light ? "text-brand-500" : "text-brand-800";
 
   const content = (
     <span
@@ -44,7 +43,7 @@ export const Logo = ({
       <span
         className={`font-display ${currentSize.text} font-extrabold tracking-tight ${textColor}`}
       >
-        Regulars<span className={dotColor}>.</span>
+        Regulars
       </span>
     </span>
   );
