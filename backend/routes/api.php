@@ -53,3 +53,5 @@ Route::middleware('auth:sanctum')->group(function () {
 
 });
 
+require __DIR__ . '/api/customer.php';
+

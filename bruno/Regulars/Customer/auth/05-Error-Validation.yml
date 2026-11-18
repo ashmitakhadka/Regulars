@@ -1,0 +1,26 @@
+info:
+  name: 05 Error - Validation (422)
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: http://localhost:8000/api/register/customer
+  body:
+    type: json
+    data: |-
+      {
+        "name": "",
+        "email": "invalid-email",
+        "password": "short",
+        "password_confirmation": "mismatch",
+        "phone": "014234567"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

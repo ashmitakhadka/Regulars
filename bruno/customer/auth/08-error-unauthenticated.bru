@@ -1,0 +1,18 @@
+meta {
+  name: 08 Error - Unauthenticated (401)
+  type: http
+  seq: 9
+}
+
+get {
+  url: http://localhost:8000/api/customer/me
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+  Origin: http://localhost:5173
+  Referer: http://localhost:5173
+}
+
