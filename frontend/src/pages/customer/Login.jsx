@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useCustomerAuth } from "../../auth/CustomerAuthContext";
 import { Card } from "../../components/ui/Card";
@@ -9,10 +9,14 @@ import { getSafeRedirect } from "../../lib/safeRedirect";
 import { customerLoginSchema } from "../../lib/customerAuthSchema";
 
 export const Login = () => {
-  const { customer, login, loading: authLoading } = useCustomerAuth();
+  const { customer, login, loading: authLoading, resetLoggedOut } = useCustomerAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectParam = searchParams.get("redirect");
+
+  useEffect(() => {
+    resetLoggedOut();
+  }, [resetLoggedOut]);
 
   const [formData, setFormData] = useState({
     email: "",

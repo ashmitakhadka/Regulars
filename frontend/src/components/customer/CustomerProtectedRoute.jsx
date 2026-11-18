@@ -6,7 +6,7 @@ import { Card } from "../ui/Card";
 import { Logo } from "../ui/Logo";
 
 export const CustomerProtectedRoute = ({ children }) => {
-  const { customer, loading, authStatus } = useCustomerAuth();
+  const { customer, loading, authStatus, justLoggedOut } = useCustomerAuth();
   const location = useLocation();
 
   if (loading) {
@@ -50,6 +50,9 @@ export const CustomerProtectedRoute = ({ children }) => {
 
   // If not logged in (/api/customer/me returned 401)
   if (!customer) {
+    if (justLoggedOut) {
+      return <Navigate to="/login" replace />;
+    }
     const redirectTarget = encodeURIComponent(location.pathname + location.search);
     return <Navigate to={`/login?redirect=${redirectTarget}`} replace />;
   }
