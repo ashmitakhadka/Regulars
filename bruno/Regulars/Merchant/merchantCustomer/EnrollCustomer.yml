@@ -10,9 +10,9 @@ http:
     type: json
     data: |-
       {
-        "loyalty_program_id": 1,
-        "identifier_type": "customer_code",
-        "identifier": "RG-TEST001"
+          "loyalty_program_id": 6,
+          "identifier_type": "customer_code",
+          "identifier": "RG-TEST002"
       }
   auth: inherit
 

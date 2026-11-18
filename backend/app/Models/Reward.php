@@ -9,6 +9,7 @@ class Reward extends Model
 {
     protected $fillable = [
         'program_version_id',
+        'earning_rule_product_id',
         'title',
         'description',
         'reward_type',
@@ -29,5 +30,10 @@ class Reward extends Model
             LoyaltyProgramVersion::class,
             'program_version_id'
         );
+    }
+
+    public function earningRuleProduct(): BelongsTo
+    {
+        return $this->belongsTo(EarningRuleProduct::class);
     }
 }
