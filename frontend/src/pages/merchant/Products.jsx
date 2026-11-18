@@ -1,32 +1,35 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPlus,
   faBox,
   faBoxesStacked,
-  faRotateRight,
   faSearch,
   faPen,
   faTrash,
-  faTag,
 } from "@fortawesome/free-solid-svg-icons";
+
 import { MerchantSidebar } from "../../components/merchant/MerchantSidebar";
 import { ProductFormModal } from "../../components/merchant/products/ProductFormModal";
 import { DeleteProductModal } from "../../components/merchant/products/DeleteProductModal";
 import { Button, EmptyState, ErrorState, Spinner } from "../../components/ui";
 import { productService } from "../../services/productService";
 
+const formatPrice = (price) =>
+  `NPR ${Number(price).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+
 export const Products = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Filters & Search
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  // Modal States
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,9 +37,11 @@ export const Products = () => {
   const [deletingProduct, setDeletingProduct] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const loadProducts = async () => {
+  // Fetch products
+  const loadProducts = useCallback(async () => {
     setLoading(true);
     setError(null);
+
     try {
       const response = await productService.getProducts();
       setProducts(response.data || []);
@@ -44,21 +49,21 @@ export const Products = () => {
       console.error("Failed to load products:", err);
       setError(
         err.response?.data?.message ||
-          "Unable to load products. Please check your connection and try again.",
+          "Unable to load products. Please try again.",
       );
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     let ignore = false;
 
     productService
       .getProducts()
-      .then((response) => {
+      .then((res) => {
         if (!ignore) {
-          setProducts(response.data || []);
+          setProducts(res.data || []);
           setError(null);
         }
       })
@@ -67,7 +72,7 @@ export const Products = () => {
           console.error("Failed to load products:", err);
           setError(
             err.response?.data?.message ||
-              "Unable to load products. Please check your connection and try again.",
+              "Unable to load products. Please try again.",
           );
         }
       })
@@ -82,88 +87,29 @@ export const Products = () => {
     };
   }, []);
 
-  // Filtered Products
-  const filteredProducts = products.filter((product) => {
-    const matchesStatus =
-      statusFilter === "all" || product.status?.toLowerCase() === statusFilter;
-
-    const matchesSearch =
-      !searchQuery.trim() ||
-      product.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.description?.toLowerCase().includes(searchQuery.toLowerCase());
-
-    return matchesStatus && matchesSearch;
-  });
-
+  // Product counts
   const counts = {
     all: products.length,
     active: products.filter((p) => p.status === "active").length,
     inactive: products.filter((p) => p.status === "inactive").length,
   };
 
-  // Create or Update Product Handler
-  const handleFormSubmit = async (payload) => {
-    setIsSubmitting(true);
-    try {
-      if (editingProduct) {
-        const response = await productService.updateProduct(
-          editingProduct.id,
-          payload,
-        );
-        toast.success(response.message || "Product updated successfully.");
+  // Search and filter
+  const filteredProducts = products.filter((product) => {
+    const query = searchQuery.trim().toLowerCase();
 
-        setProducts((prev) =>
-          prev.map((p) => (p.id === editingProduct.id ? response.data : p)),
-        );
-      } else {
-        const response = await productService.createProduct(payload);
-        toast.success(response.message || "Product created successfully.");
+    const matchesSearch =
+      !query ||
+      product.name?.toLowerCase().includes(query) ||
+      product.description?.toLowerCase().includes(query);
 
-        setProducts((prev) => [response.data, ...prev]);
-      }
+    const matchesStatus =
+      statusFilter === "all" || product.status === statusFilter;
 
-      setIsFormOpen(false);
-      setEditingProduct(null);
-    } catch (err) {
-      console.error("Failed to save product:", err);
-      if (err.response?.status === 422 && err.response?.data?.errors) {
-        const errorMessages = Object.values(err.response.data.errors)
-          .flat()
-          .join(" ");
-        toast.error(errorMessages || "Please correct the highlighted fields.");
-      } else {
-        toast.error(
-          err.response?.data?.message ||
-            "Unable to save product. Please try again.",
-        );
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    return matchesSearch && matchesStatus;
+  });
 
-  // Delete Product Handler
-  const handleDeleteConfirm = async () => {
-    if (!deletingProduct) return;
-    setIsDeleting(true);
-
-    try {
-      const response = await productService.deleteProduct(deletingProduct.id);
-      toast.success(response.message || "Product deleted successfully.");
-
-      setProducts((prev) => prev.filter((p) => p.id !== deletingProduct.id));
-      setDeletingProduct(null);
-    } catch (err) {
-      console.error("Failed to delete product:", err);
-      toast.error(
-        err.response?.data?.message ||
-          "Unable to delete product. It may be linked to a loyalty program.",
-      );
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
+  // Open product form
   const openCreateModal = () => {
     setEditingProduct(null);
     setIsFormOpen(true);
@@ -174,284 +120,303 @@ export const Products = () => {
     setIsFormOpen(true);
   };
 
+  const closeFormModal = () => {
+    setIsFormOpen(false);
+    setEditingProduct(null);
+  };
+
+  // Create or update product
+  const handleFormSubmit = async (payload) => {
+    setIsSubmitting(true);
+
+    try {
+      if (editingProduct) {
+        const response = await productService.updateProduct(
+          editingProduct.id,
+          payload,
+        );
+
+        setProducts((prev) =>
+          prev.map((p) => (p.id === editingProduct.id ? response.data : p)),
+        );
+
+        toast.success(response.message || "Product updated successfully.");
+      } else {
+        const response = await productService.createProduct(payload);
+
+        setProducts((prev) => [response.data, ...prev]);
+
+        toast.success(response.message || "Product created successfully.");
+      }
+
+      closeFormModal();
+    } catch (err) {
+      console.error("Failed to save product:", err);
+
+      if (err.response?.status === 422 && err.response?.data?.errors) {
+        const messages = Object.values(err.response.data.errors)
+          .flat()
+          .join(" ");
+
+        toast.error(messages || "Please check your input.");
+      } else {
+        toast.error(err.response?.data?.message || "Unable to save product.");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Delete product
+  const handleDeleteConfirm = async () => {
+    if (!deletingProduct) return;
+
+    setIsDeleting(true);
+
+    try {
+      const response = await productService.deleteProduct(deletingProduct.id);
+
+      setProducts((prev) => prev.filter((p) => p.id !== deletingProduct.id));
+
+      toast.success(response.message || "Product deleted successfully.");
+      setDeletingProduct(null);
+    } catch (err) {
+      console.error("Failed to delete product:", err);
+
+      toast.error(
+        err.response?.data?.message ||
+          "Unable to delete product. It may be linked to a loyalty program.",
+      );
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const filters = [
+    { id: "all", label: "All", count: counts.all },
+    { id: "active", label: "Active", count: counts.active },
+    { id: "inactive", label: "Inactive", count: counts.inactive },
+  ];
+
   return (
-    <div className="flex min-h-screen flex-col bg-white md:flex-row">
-      {/* Merchant Sidebar */}
+    <div className="flex min-h-screen bg-white md:flex-row">
       <MerchantSidebar />
 
-      {/* Main Content Area */}
-      <main className="w-full flex-1 p-5 sm:p-8">
-        {/* Header */}
-        <header className="flex flex-col gap-4 border-b border-[#F4F0EA] pb-6 sm:flex-row sm:items-center sm:justify-between">
-          <div>
+      <main className="min-w-0 flex-1 p-5 sm:p-8">
+        <div className="mx-auto max-w-7xl">
+          {/* Page Header */}
+          <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-[#23140C] sm:text-3xl">
+                Products
+              </h1>
+            </div>
+
             <div className="flex items-center gap-2">
-              <span className="text-[13px] font-semibold uppercase tracking-wider text-[#23140C]/60">
-                Merchant Portal
-              </span>
-              <span className="text-[#23140C]/30">•</span>
-              <span className="text-[13px] font-semibold text-[#A51D27]">
-                Product Catalog
-              </span>
+              <Button variant="primary" size="sm" onClick={openCreateModal}>
+                <FontAwesomeIcon icon={faPlus} />
+                Add Product
+              </Button>
             </div>
-            <h1 className="mt-1 font-display text-[26px] sm:text-[28px] font-bold tracking-tight text-[#23140C]">
-              Products
-            </h1>
-            <p className="mt-1 text-[13.5px] sm:text-[14px] text-[#23140C]/75">
-              Manage items eligible for quantity-based loyalty program stamp rewards.
-            </p>
-          </div>
+          </header>
 
-          <div className="flex items-center gap-3">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={loadProducts}
-              disabled={loading}
-              title="Refresh products"
-            >
-              <FontAwesomeIcon
-                icon={faRotateRight}
-                className={loading ? "animate-spin" : ""}
-              />
-              <span className="hidden sm:inline">Refresh</span>
-            </Button>
+          {/* Search and Filters */}
+          {!loading && !error && products.length > 0 && (
+            <div className="mt-8 flex flex-col gap-4 rounded-xl p-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative w-full sm:max-w-sm">
+                <FontAwesomeIcon
+                  icon={faSearch}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-[#23140C]/40"
+                />
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full rounded-lg bg-white py-2.5 pl-10 pr-4 text-sm text-[#23140C] placeholder:text-[#23140C]/40 shadow-sm outline-none ring-1 ring-[#23140C]/5 transition focus:shadow-md focus:ring-2 focus:ring-[#A51D27]/30"
+                />
+              </div>
 
-            <Button variant="primary" size="sm" onClick={openCreateModal}>
-              <FontAwesomeIcon icon={faPlus} />
-              <span>Add Product</span>
-            </Button>
-          </div>
-        </header>
+              <div className="flex flex-wrap gap-2">
+                {filters.map((filter) => {
+                  const selected = statusFilter === filter.id;
 
-        {/* Search & Filter Bar */}
-        {!loading && !error && products.length > 0 && (
-          <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-[#F4F0EA] pb-5">
-            {/* Search Input */}
-            <div className="relative w-full max-w-sm">
-              <FontAwesomeIcon
-                icon={faSearch}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-[#23140C]/40"
-              />
-              <input
-                type="text"
-                placeholder="Search products by name or description..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-xl border border-[#F4F0EA] bg-white pl-10 pr-4 py-2 text-[14px] text-[#23140C] placeholder:text-[#23140C]/40 transition focus:border-[#A51D27] focus:outline-none focus:ring-2 focus:ring-[#A51D27]/20"
-              />
-            </div>
-
-            {/* Status Filter Tabs */}
-            <div className="flex flex-wrap gap-2">
-              {[
-                { id: "all", label: "All Items", count: counts.all },
-                { id: "active", label: "Active", count: counts.active },
-                { id: "inactive", label: "Inactive", count: counts.inactive },
-              ].map((tab) => {
-                const isSelected = statusFilter === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setStatusFilter(tab.id)}
-                    className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-[13px] font-semibold border transition cursor-pointer ${
-                      isSelected
-                        ? "border-[#A51D27] bg-[#A51D27]/10 text-[#A51D27]"
-                        : "border-[#F4F0EA] bg-[#F4F0EA] text-[#23140C] hover:border-[#A51D27]/40"
-                    }`}
-                  >
-                    <span>{tab.label}</span>
-                    <span
-                      className={`rounded-full px-2 py-0.2 text-[11px] font-bold ${
-                        isSelected
-                          ? "bg-[#A51D27] text-white"
-                          : "bg-white text-[#23140C]/80"
+                  return (
+                    <button
+                      key={filter.id}
+                      type="button"
+                      onClick={() => setStatusFilter(filter.id)}
+                      className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-[13px] font-semibold border transition cursor-pointer ${
+                        selected
+                          ? "border-[#A51D27] bg-[#A51D27]/10 text-[#A51D27]"
+                          : "border-[#F4F0EA] bg-[#F4F0EA] text-[#23140C] hover:border-[#A51D27]/40"
                       }`}
                     >
-                      {tab.count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Content Section */}
-        <section className="mt-8" aria-label="Merchant products listing">
-          {/* 1. Loading State */}
-          {loading && (
-            <div className="flex min-h-[300px] flex-col items-center justify-center gap-3 rounded-2xl bg-[#F4F0EA]/40 p-8">
-              <Spinner size="md" />
-              <p className="text-[14px] font-medium text-[#23140C]/75">
-                Loading your product catalog...
-              </p>
+                      <span>{filter.label}</span>
+                      <span
+                        className={`rounded-full px-2 py-0.2 text-[11px] font-bold ${
+                          selected
+                            ? "bg-[#A51D27] text-white"
+                            : "bg-white text-[#23140C]/80"
+                        }`}
+                      >
+                        {filter.count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
 
-          {/* 2. Error State */}
-          {!loading && error && (
-            <div className="rounded-2xl border border-red-100 bg-red-50/40 p-6">
-              <ErrorState
-                title="Could not load products"
-                message={error}
-                onRetry={loadProducts}
-              />
-            </div>
-          )}
+          {/* Product Content */}
+          <section className="mt-7" aria-label="Products">
+            {loading && (
+              <div className="flex min-h-[300px] flex-col items-center justify-center gap-3">
+                <Spinner size="md" />
+                <p className="text-sm text-[#23140C]/60">Loading products...</p>
+              </div>
+            )}
 
-          {/* 3. Empty State (Zero Products in Catalog) */}
-          {!loading && !error && products.length === 0 && (
-            <div className="rounded-2xl bg-[#F4F0EA]/40 p-8">
-              <EmptyState
-                icon={faBoxesStacked}
-                title="No products added yet"
-                description="Add products to your catalog to use them in quantity-based loyalty programs."
-                action={
-                  <Button variant="primary" size="md" onClick={openCreateModal}>
-                    <FontAwesomeIcon icon={faPlus} />
-                    <span>Add Your First Product</span>
-                  </Button>
-                }
-              />
-            </div>
-          )}
+            {!loading && error && (
+              <div className="rounded-xl bg-red-50/50 p-6">
+                <ErrorState
+                  title="Unable to load products"
+                  message={error}
+                  onRetry={loadProducts}
+                />
+              </div>
+            )}
 
-          {/* 4. Empty Filter State */}
-          {!loading &&
-            !error &&
-            products.length > 0 &&
-            filteredProducts.length === 0 && (
-              <div className="rounded-2xl bg-[#F4F0EA]/30 p-8">
+            {!loading && !error && products.length === 0 && (
+              <div className="rounded-xl bg-[#F4F0EA]/40 p-8">
                 <EmptyState
-                  icon={faBox}
-                  title="No matching products found"
-                  description="Try adjusting your search query or status filter."
+                  icon={faBoxesStacked}
+                  title="No products yet"
+                  description="Add products to use them in your quantity-based loyalty programs."
                   action={
                     <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => {
-                        setSearchQuery("");
-                        setStatusFilter("all");
-                      }}
+                      variant="primary"
+                      size="md"
+                      onClick={openCreateModal}
                     >
-                      Clear Filters
+                      <FontAwesomeIcon icon={faPlus} />
+                      Add Your First Product
                     </Button>
                   }
                 />
               </div>
             )}
 
-          {/* 5. Products Grid */}
-          {!loading && !error && filteredProducts.length > 0 && (
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {filteredProducts.map((product) => {
-                const isActive = product.status === "active";
-                return (
-                  <article
-                    key={product.id}
-                    className="group flex flex-col justify-between rounded-2xl bg-white p-5 shadow-[0_2px_12px_rgba(35,20,12,0.06)] transition-all hover:shadow-[0_6px_20px_rgba(35,20,12,0.1)]"
-                  >
-                    <div>
-                      {/* Top Bar: Icon, Name and Status Badge */}
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-3">
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F4F0EA] text-[#23140C]">
-                            <FontAwesomeIcon icon={faBox} className="h-5 w-5" />
+            {!loading &&
+              !error &&
+              products.length > 0 &&
+              filteredProducts.length === 0 && (
+                <div className="rounded-xl bg-[#F4F0EA]/30 p-8">
+                  <EmptyState
+                    icon={faBox}
+                    title="No matching products"
+                    description="Try another search or change the selected filter."
+                    action={
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setSearchQuery("");
+                          setStatusFilter("all");
+                        }}
+                      >
+                        Clear Filters
+                      </Button>
+                    }
+                  />
+                </div>
+              )}
+
+            {!loading && !error && filteredProducts.length > 0 && (
+              <>
+                <div className="mb-4 flex items-center justify-between">
+                  <p className="text-sm font-medium text-[#23140C]/60">
+                    {filteredProducts.length}{" "}
+                    {filteredProducts.length === 1 ? "product" : "products"}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {filteredProducts.map((product) => {
+                    const isActive = product.status === "active";
+
+                    return (
+                      <article
+                        key={product.id}
+                        className="flex flex-col rounded-xl bg-white p-5 shadow-[0_2px_12px_rgba(35,20,12,0.06)] transition hover:shadow-[0_4px_18px_rgba(35,20,12,0.10)]"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <div className="min-w-0">
+                              <h3 className="truncate font-semibold text-[#23140C]">
+                                {product.name}
+                              </h3>
+
+                              <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-[#A51D27]">
+                                {formatPrice(product.price)}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <h3 className="font-display text-[17px] font-bold text-[#23140C] leading-snug">
-                              {product.name}
-                            </h3>
-                            <p className="mt-1 flex items-center gap-1.5 text-[15px] font-bold text-[#A51D27]">
-                              <FontAwesomeIcon
-                                icon={faTag}
-                                className="h-3.5 w-3.5 text-[#23140C]/50"
-                              />
-                              <span>
-                                NPR {Number(product.price).toLocaleString("en-US", {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                })}
-                              </span>
-                            </p>
-                          </div>
+
+                          <span
+                            className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${
+                              isActive
+                                ? "bg-emerald-50 text-emerald-700"
+                                : "bg-[#F4F0EA] text-[#23140C]/60"
+                            }`}
+                          >
+                            {product.status || "active"}
+                          </span>
                         </div>
 
-                        {/* Status Pill */}
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[12px] font-semibold capitalize ${
-                            isActive
-                              ? "bg-emerald-50 text-emerald-900 border-emerald-300"
-                              : "bg-neutral-100 text-neutral-800 border-neutral-300"
-                          }`}
-                        >
-                          <span
-                            className={`h-1.5 w-1.5 rounded-full ${
-                              isActive ? "bg-emerald-600" : "bg-neutral-500"
-                            }`}
-                          />
-                          {product.status || "active"}
-                        </span>
-                      </div>
+                        <p className="mt-2 min-h-10 text-sm leading-relaxed text-[#23140C]/60 line-clamp-2">
+                          {product.description || "No description provided."}
+                        </p>
 
-                      {/* Description */}
-                      <div className="mt-4 rounded-xl bg-[#F4F0EA]/60 p-3 text-[13px] text-[#23140C]/75">
-                        {product.description ? (
-                          <p className="line-clamp-2 leading-relaxed">
-                            {product.description}
-                          </p>
-                        ) : (
-                          <p className="italic text-[#23140C]/50">
-                            No description provided.
-                          </p>
-                        )}
-                      </div>
-                    </div>
+                        <div className="mt-1 flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(product)}
+                            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-[#23140C]/70 transition hover:bg-[#F4F0EA] hover:text-[#23140C]"
+                          >
+                            <FontAwesomeIcon icon={faPen} />
+                            Edit
+                          </button>
 
-                    {/* Bottom Actions */}
-                    <div className="mt-5 flex items-center justify-end gap-2 border-t border-[#F4F0EA] pt-3.5">
-                      <button
-                        type="button"
-                        onClick={() => openEditModal(product)}
-                        className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-semibold text-[#23140C]/80 hover:bg-[#F4F0EA] hover:text-[#23140C] transition cursor-pointer"
-                        title="Edit product details"
-                      >
-                        <FontAwesomeIcon icon={faPen} className="text-xs" />
-                        <span>Edit</span>
-                      </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeletingProduct(product)}
+                            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                          >
+                            <FontAwesomeIcon icon={faTrash} />
+                            Delete
+                          </button>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </section>
+        </div>
 
-                      <button
-                        type="button"
-                        onClick={() => setDeletingProduct(product)}
-                        className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-semibold text-red-700 hover:bg-red-50 transition cursor-pointer"
-                        title="Delete product"
-                      >
-                        <FontAwesomeIcon icon={faTrash} className="text-xs" />
-                        <span>Delete</span>
-                      </button>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          )}
-        </section>
-
-        {/* Add/Edit Modal */}
+        {/* Add / Edit Product */}
         <ProductFormModal
           isOpen={isFormOpen}
           product={editingProduct}
-          onClose={() => {
-            setIsFormOpen(false);
-            setEditingProduct(null);
-          }}
+          onClose={closeFormModal}
           onSubmit={handleFormSubmit}
           isSubmitting={isSubmitting}
         />
 
-        {/* Delete Confirmation Modal */}
+        {/* Delete Confirmation */}
         <DeleteProductModal
           isOpen={Boolean(deletingProduct)}
           product={deletingProduct}
@@ -465,4 +430,3 @@ export const Products = () => {
 };
 
 export default Products;
-
