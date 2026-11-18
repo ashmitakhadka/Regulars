@@ -40,7 +40,7 @@ export const LoyaltyProgramCard = ({ program }) => {
         {/* Top Header: Title and Status */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3.5">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F4F0EA] text-[#23140C] transition-colors group-hover:bg-[#A51D27] group-hover:text-white">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F4F0EA] text-[#23140C]">
               <FontAwesomeIcon icon={faGift} className="h-5 w-5" />
             </div>
             <div>
