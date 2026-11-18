@@ -24,6 +24,7 @@ import { LoyaltyPrograms } from "./pages/merchant/LoyaltyPrograms";
 import { CreateLoyaltyProgram } from "./pages/merchant/CreateLoyaltyProgram";
 import { LoyaltyProgramDetails } from "./pages/merchant/LoyaltyProgramDetails";
 import { EditLoyaltyProgram } from "./pages/merchant/EditLoyaltyProgram";
+import { Products } from "./pages/merchant/Products";
 import MerchantQrCode from "./components/merchant/MerchantQrCode";
 
 const MerchantProtectedRoute = ({ children }) => {
@@ -110,6 +111,14 @@ const router = createBrowserRouter([
     element: (
       <MerchantProtectedRoute>
         <LoyaltyProgramDetails />
+      </MerchantProtectedRoute>
+    ),
+  },
+  {
+    path: "/merchant/products",
+    element: (
+      <MerchantProtectedRoute>
+        <Products />
       </MerchantProtectedRoute>
     ),
   },
