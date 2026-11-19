@@ -22,7 +22,8 @@ export const UIPreview = () => {
           UI Component Showcase
         </h1>
         <p className="text-sm text-ink-soft mt-1">
-          Reusable UI library conforming to Regulars design system and theme tokens.
+          Reusable UI library conforming to Regulars design system and theme
+          tokens.
         </p>
       </div>
 
@@ -67,6 +68,7 @@ export const UIPreview = () => {
             <Button variant="secondary">Secondary Blush</Button>
             <Button variant="outline">Outline</Button>
             <Button variant="ghost">Ghost Link</Button>
+            <Button variant="soft">Soft</Button>
           </div>
         </div>
 
@@ -118,7 +120,8 @@ export const UIPreview = () => {
               Standard Card
             </h3>
             <p className="text-sm text-ink-soft mt-1 leading-relaxed">
-              White background, clean rounded-xl edges, and soft shadow with zero borders.
+              White background, clean rounded-xl edges, and soft shadow with
+              zero borders.
             </p>
           </Card>
           <Card onClick={() => alert("Card clicked!")}>
@@ -220,4 +223,3 @@ export const UIPreview = () => {
 };
 
 export default UIPreview;
-

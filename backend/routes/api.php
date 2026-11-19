@@ -35,8 +35,10 @@ Route::middleware('auth:sanctum')->group(function () {
     //Merchant-Customers
     Route::get('/merchant/customers',[MerchantCustomerController::class, 'getCustomers']);
     Route::post('merchant/customer/enroll',[MerchantCustomerController::class, 'enrollCustomer']);
+     Route::get('/merchant/customers/recent-activity', [MerchantCustomerController::class, 'getAllCustomersRecentActivity']);
     Route::get('/merchant/customers/{customer}', [MerchantCustomerController::class, 'getCustomerDetails']);
     Route::get( '/merchant/customers/{customer}/activity', [MerchantCustomerController::class, 'getCustomerActivity']);
+   
 
     //Award stamps
     Route::post('merchant/stamps/award', [MerchantStampController::class, 'awardStamp']);

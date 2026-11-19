@@ -28,7 +28,9 @@ export const customerService = {
    * GET /merchant/customers/:id/activity
    */
   async getCustomerActivity(customerId) {
-    const response = await api.get(`/merchant/customers/${customerId}/activity`);
+    const response = await api.get(
+      `/merchant/customers/${customerId}/activity`,
+    );
     return response.data;
   },
 
@@ -57,7 +59,11 @@ export const customerService = {
     const response = await api.post("/merchant/stamps/award", payload);
     return response.data;
   },
+
+  async getAllCustomersRecentActivity() {
+    const response = await api.get("/merchant/customers/recent-activity");
+    return response.data;
+  },
 };
 
 export default customerService;
-

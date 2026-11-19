@@ -7,6 +7,7 @@ import {
   faRotate,
 } from "@fortawesome/free-solid-svg-icons";
 import loyaltyProgramService from "../../services/loyaltyProgramService";
+import { Button } from "../../components/ui/Button";
 
 const getLatestVersion = (program) => {
   return [...(program.versions || [])].sort(
@@ -14,34 +15,58 @@ const getLatestVersion = (program) => {
   )[0];
 };
 
-const getEarningSummary = (rule) => {
+const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+const getEarningSummary = (rule, stampsRequired) => {
   if (!rule) return "Earning details unavailable";
 
   const threshold = Number(rule.threshold);
+  const earns = `earn ${plural(Number(rule.stamps_awarded), "stamp")}`;
+
+  let text;
 
   switch (rule.earning_type) {
     case "visit":
-      return `${threshold} ${threshold === 1 ? "visit" : "visits"}`;
+      text =
+        threshold > 1
+          ? `Visit ${threshold} times, ${earns}`
+          : `Every visit, ${earns}`;
+      break;
+
     case "purchase":
-      return `Purchase amount: ${threshold}`;
+      text =
+        threshold > 0
+          ? `Spend ${threshold} or more, ${earns}`
+          : `Any purchase, ${earns}`;
+      break;
+
     case "quantity":
-      return `${threshold} ${threshold === 1 ? "item" : "items"}`;
+      text =
+        threshold > 1
+          ? `Buy ${plural(threshold, "item")}, ${earns}`
+          : `Buy 1 item, ${earns}`;
+      break;
+
     default:
-      return "Earning rule";
+      text = "Earning rule";
   }
+
+  return stampsRequired
+    ? `${text} · ${plural(Number(stampsRequired), "stamp")} unlock the reward`
+    : text;
 };
 
 const StatusBadge = ({ status }) => {
   const styles = {
-    active: "bg-emerald-50 text-emerald-800 border-emerald-300",
-    inactive: "bg-[#F4F0EA] text-[#23140C] border-neutral-300",
-    archived: "bg-neutral-100 text-neutral-800 border-neutral-300",
+    active: "bg-emerald-50 text-emerald-800",
+    inactive: "bg-[#F4F0EA] text-[#23140C]",
+    archived: "bg-neutral-100 text-neutral-800",
   };
 
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-3 py-1 text-[13px] font-semibold capitalize ${
-        styles[status] || "bg-gray-100 text-gray-700 border-gray-200"
+      className={`inline-flex h-7 min-w-[64px] items-center justify-center rounded-lg px-2.5 text-[12px] font-semibold capitalize ${
+        styles[status] || "bg-gray-100 text-gray-700"
       }`}
     >
       {status}
@@ -104,26 +129,22 @@ export const LoyaltyProgramOverview = () => {
     ["active", "inactive"].includes(program.status),
   );
 
-  // Total, active and inactive program counts.
   const totalCount = nonArchivedPrograms.length;
 
   const activeCount = nonArchivedPrograms.filter(
     (program) => program.status === "active",
   ).length;
 
-  const inactiveCount = nonArchivedPrograms.filter(
-    (program) => program.status === "inactive",
-  ).length;
+  // Show the latest two programs, with active programs first.
+  const sortedPrograms = [...nonArchivedPrograms].sort((a, b) => {
+    if (a.status === "active" && b.status !== "active") return -1;
+    if (a.status !== "active" && b.status === "active") return 1;
 
-  // Show the latest three programs, with active programs first.
-  const visiblePrograms = [...nonArchivedPrograms]
-    .sort((a, b) => {
-      if (a.status === "active" && b.status !== "active") return -1;
-      if (a.status !== "active" && b.status === "active") return 1;
+    return new Date(b.updated_at) - new Date(a.updated_at);
+  });
 
-      return new Date(b.updated_at) - new Date(a.updated_at);
-    })
-    .slice(0, 3);
+  const visiblePrograms = sortedPrograms.slice(0, 2);
+  const hiddenCount = totalCount - visiblePrograms.length;
 
   return (
     <section className="mt-10 rounded-2xl bg-white p-6 shadow-[0_4px_24px_rgba(35,20,12,0.06)] sm:p-7">
@@ -137,25 +158,26 @@ export const LoyaltyProgramOverview = () => {
             <h2 className="font-display text-[18px] font-bold text-[#23140C]">
               Loyalty Programs
             </h2>
-            <p className="mt-0.5 text-[13.5px] text-[#23140C]/75">
-              Manage your customer loyalty programs
-            </p>
+
+            {!loading && !error && (
+              <p className="mt-0.5 text-[13px] text-[#23140C]/75">
+                Total Programs{" "}
+                <span className="font-bold text-[#A51D27]">{totalCount}</span>
+                {" · "}
+                {activeCount} Active
+              </p>
+            )}
           </div>
         </div>
 
-        {!loading && !error && (
-          <div className="flex items-center gap-3 sm:justify-end">
-            <p className="text-[13.5px] font-medium text-[#23140C]/75">
-              Total Programs
-            </p>
-
-            <p className="text-[18px] font-bold text-[#A51D27]">{totalCount}</p>
-
-            <p className="text-[13px] text-[#23140C]/75">
-              {activeCount} Active · {inactiveCount} Inactive
-            </p>
-          </div>
-        )}
+        <Button
+          variant="soft"
+          size="sm"
+          to="/merchant/loyalty-programs"
+          className="self-start sm:self-auto"
+        >
+          Manage programs
+        </Button>
       </div>
 
       <div className="mt-7 space-y-4">
@@ -170,14 +192,14 @@ export const LoyaltyProgramOverview = () => {
             <button
               type="button"
               onClick={handleRetry}
-              className="mt-3 text-[14px] font-semibold text-[#A51D27] hover:underline cursor-pointer"
+              className="mt-3 cursor-pointer text-[14px] font-semibold text-[#A51D27] hover:underline"
             >
               Try again
             </button>
           </div>
         ) : visiblePrograms.length === 0 ? (
           <div className="rounded-xl bg-[#F4F0EA]/60 px-4 py-8 text-center">
-            <p className="font-semibold text-[#23140C] text-[15px]">
+            <p className="text-[15px] font-semibold text-[#23140C]">
               No loyalty programs yet
             </p>
             <p className="mt-1 text-[13.5px] text-[#23140C]/75">
@@ -190,36 +212,52 @@ export const LoyaltyProgramOverview = () => {
             const rule = version?.earning_rule;
             const reward = version?.reward;
 
+            const stampsRequired =
+              reward?.stamps_required ?? version?.stamps_required;
+
+            const enrolled = program.stamp_cards_count;
+
             return (
               <div
                 key={program.id}
-                className="flex flex-col justify-between gap-3 rounded-xl bg-[#F4F0EA]/50 p-4 sm:flex-row sm:items-center"
+                className="flex flex-col justify-between gap-3 rounded-xl bg-white p-4 shadow-sm sm:flex-row sm:items-center"
               >
                 <div className="min-w-0">
-                  <h3 className="font-semibold text-[#23140C] text-[15px]">
-                    {program.name}
-                  </h3>
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <h3 className="text-[15px] font-semibold text-[#23140C]">
+                      {program.name}
+                    </h3>
+
+                    <span className="inline-flex items-center rounded-full bg-[#F4F0EA] px-2.5 py-0.5 text-[12.5px] font-semibold text-[#23140C]">
+                      {reward?.title || "No reward set"}
+                    </span>
+                  </div>
 
                   <p className="mt-1 text-[13.5px] text-[#23140C]/75">
-                    {getEarningSummary(rule)}
-                    {rule &&
-                      ` · ${rule.stamps_awarded} stamp${rule.stamps_awarded === 1 ? "" : "s"} awarded`}
-                  </p>
-
-                  <p className="mt-1 text-[13.5px] text-[#23140C]/85">
-                    Reward: {reward?.title || "Not specified"}
+                    {getEarningSummary(rule, stampsRequired)}
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between gap-3 sm:justify-end">
+                <div className="flex items-center gap-3 sm:justify-end">
+                  {enrolled != null && (
+                    <div className="min-w-[48px] text-center leading-tight">
+                      <p className="text-[15px] font-bold text-[#23140C]">
+                        {Number(enrolled).toLocaleString()}
+                      </p>
+                      <p className="text-[12px] text-[#23140C]/70">Enrolled</p>
+                    </div>
+                  )}
+
                   <StatusBadge status={program.status} />
 
-                  <Link
+                  <Button
+                    variant="secondary"
+                    size="xs"
                     to={`/merchant/loyalty-programs/${program.id}`}
-                    className="text-[14px] font-semibold text-[#A51D27] hover:underline"
+                    className="!h-7 !min-w-[64px] !rounded-lg !px-2.5"
                   >
                     View
-                  </Link>
+                  </Button>
                 </div>
               </div>
             );
@@ -227,15 +265,17 @@ export const LoyaltyProgramOverview = () => {
         )}
       </div>
 
-      <div className="mt-4 pt-3">
-        <Link
-          to="/merchant/loyalty-programs"
-          className="inline-flex items-center gap-2 text-[14px] font-semibold text-[#A51D27] transition hover:gap-3"
-        >
-          Manage loyalty programs
-          <FontAwesomeIcon icon={faArrowRight} />
-        </Link>
-      </div>
+      {!loading && !error && hiddenCount > 0 && (
+        <div className="mt-2 flex justify-end pt-2">
+          <Link
+            to="/merchant/loyalty-programs"
+            className="inline-flex items-center gap-2 text-[14px] font-semibold text-[#A51D27] transition hover:gap-3"
+          >
+            View more
+            <FontAwesomeIcon icon={faArrowRight} />
+          </Link>
+        </div>
+      )}
     </section>
   );
 };
