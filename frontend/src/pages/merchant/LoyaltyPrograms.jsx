@@ -148,17 +148,17 @@ export const LoyaltyPrograms = () => {
                   key={tab.id}
                   type="button"
                   onClick={() => setStatusFilter(tab.id)}
-                  className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-[13px] font-semibold transition cursor-pointer ${
+                  className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-[13px] font-semibold border transition cursor-pointer ${
                     isSelected
-                      ? "bg-[#23140C] text-white"
-                      : "bg-[#F4F0EA] text-[#23140C] hover:bg-[#F4F0EA]/80"
+                      ? "border-[#A51D27] bg-[#A51D27]/10 text-[#A51D27]"
+                      : "border-[#F4F0EA] bg-[#F4F0EA] text-[#23140C] hover:border-[#A51D27]/40"
                   }`}
                 >
                   <span>{tab.label}</span>
                   <span
-                    className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                    className={`rounded-full px-2 py-0.2 text-[11px] font-bold ${
                       isSelected
-                        ? "bg-white/20 text-white"
+                        ? "bg-[#A51D27] text-white"
                         : "bg-white text-[#23140C]/80"
                     }`}
                   >

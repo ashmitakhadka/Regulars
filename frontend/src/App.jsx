@@ -29,6 +29,10 @@ import { LoyaltyPrograms } from "./pages/merchant/LoyaltyPrograms";
 import { CreateLoyaltyProgram } from "./pages/merchant/CreateLoyaltyProgram";
 import { LoyaltyProgramDetails } from "./pages/merchant/LoyaltyProgramDetails";
 import { EditLoyaltyProgram } from "./pages/merchant/EditLoyaltyProgram";
+import { Products } from "./pages/merchant/Products";
+import { Customers } from "./pages/merchant/Customers";
+import { CustomerDetails } from "./pages/merchant/CustomerDetails";
+import { Vouchers as MerchantVouchers } from "./pages/merchant/Vouchers";
 import MerchantQrCode from "./components/merchant/MerchantQrCode";
 
 const MerchantProtectedRoute = ({ children }) => {
@@ -135,6 +139,38 @@ const router = createBrowserRouter([
     element: (
       <MerchantProtectedRoute>
         <LoyaltyProgramDetails />
+      </MerchantProtectedRoute>
+    ),
+  },
+  {
+    path: "/merchant/products",
+    element: (
+      <MerchantProtectedRoute>
+        <Products />
+      </MerchantProtectedRoute>
+    ),
+  },
+  {
+    path: "/merchant/customers",
+    element: (
+      <MerchantProtectedRoute>
+        <Customers />
+      </MerchantProtectedRoute>
+    ),
+  },
+  {
+    path: "/merchant/customers/:id",
+    element: (
+      <MerchantProtectedRoute>
+        <CustomerDetails />
+      </MerchantProtectedRoute>
+    ),
+  },
+  {
+    path: "/merchant/vouchers",
+    element: (
+      <MerchantProtectedRoute>
+        <MerchantVouchers />
       </MerchantProtectedRoute>
     ),
   },

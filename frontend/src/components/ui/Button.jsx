@@ -8,6 +8,10 @@ const variants = {
     "bg-blush-100 text-brand-900 hover:bg-blush-200 active:bg-blush-300 focus-visible:outline-brand-800",
   outline:
     "border-2 border-brand-800 text-brand-800 hover:bg-blush-100 active:bg-blush-200 focus-visible:outline-brand-800",
+
+  // NEW: light-border outline, like the "Manage programs →" button
+  soft: "border border-[#23140C]/15 bg-white text-brand-800 hover:bg-blush-100 active:bg-blush-200 focus-visible:outline-brand-800",
+
   ghost:
     "text-brand-900 hover:bg-blush-100 active:bg-blush-200 focus-visible:outline-brand-800",
   onDark:
@@ -17,6 +21,7 @@ const variants = {
 };
 
 const sizes = {
+  xs: "min-h-[32px] px-3 py-1 text-[13px]",
   sm: "min-h-[44px] px-4 py-2 text-sm",
   md: "min-h-[44px] px-5 py-2.5 text-sm sm:text-base",
   lg: "min-h-[48px] px-7 py-3.5 text-base font-bold",
@@ -41,7 +46,8 @@ export const Button = ({
   const variantClass = variants[variant] || variants.primary;
   const sizeClass = sizes[size] || sizes.md;
   const widthClass = fullWidth ? "w-full" : "";
-  const combinedClasses = `${baseClasses} ${variantClass} ${sizeClass} ${widthClass} ${className}`.trim();
+  const combinedClasses =
+    `${baseClasses} ${variantClass} ${sizeClass} ${widthClass} ${className}`.trim();
 
   const content = (
     <>
@@ -80,4 +86,3 @@ export const Button = ({
 };
 
 export default Button;
-

@@ -10,7 +10,7 @@ http:
     type: json
     data: |-
       {
-          "code": "UOLCAEHC4EGK"
+        "code": "ED9OI99WMUNY"
       }
   auth: inherit
 
