@@ -40,6 +40,7 @@ class CustomerDemoSeeder extends Seeder
                 'email' => 'himalayan-java@example.com',
                 'owner_name' => 'Bikash Shrestha',
                 'business_name' => 'Himalayan Java Cafe',
+                'category' => 'cafe',
                 'slug' => 'himalayan-java',
                 'description' => 'Locally sourced artisan coffee, handcrafted espresso, and fresh bakery in Kathmandu.',
                 'phone' => '9851000001',
@@ -59,6 +60,7 @@ class CustomerDemoSeeder extends Seeder
                 'email' => 'glow-salon@example.com',
                 'owner_name' => 'Sunita Rai',
                 'business_name' => 'Glow Beauty Salon',
+                'category' => 'salon',
                 'slug' => 'glow-beauty-salon',
                 'description' => 'Modern hair styling, organic skincare, and nail art studio.',
                 'phone' => '9851000002',
@@ -78,6 +80,7 @@ class CustomerDemoSeeder extends Seeder
                 'email' => 'kavre-fitness@example.com',
                 'owner_name' => 'Rabin Tamang',
                 'business_name' => 'Kavre Fitness & Gym',
+                'category' => 'gym',
                 'slug' => 'kavre-fitness-gym',
                 'description' => 'State of the art strength training, cardio floor, and functional training zone.',
                 'phone' => '9851000003',
@@ -132,6 +135,7 @@ class CustomerDemoSeeder extends Seeder
                 [
                     'user_id' => $owner->id,
                     'business_name' => $data['business_name'],
+                    'category' => $data['category'] ?? null,
                     'description' => $data['description'],
                     'phone' => $data['phone'],
                     'address' => $data['address'],
@@ -389,6 +393,80 @@ class CustomerDemoSeeder extends Seeder
                 'claim_expires_at' => Carbon::now($timezone)->addDays(4),
                 'claimed_at' => null,
                 'voucher_id' => null,
+            ]
+        );
+
+        // -------------------------------------------------------------
+        // 6. Edge Case Merchants for Customer Directory Testing
+        // -------------------------------------------------------------
+
+        // 6a. Suspended Merchant (has an active program, but merchant itself is suspended)
+        $suspendedOwner = User::updateOrCreate(
+            ['email' => 'suspended-owner@example.com'],
+            [
+                'name' => 'Suspended Owner',
+                'password' => Hash::make('secret123'),
+                'role' => 'merchant',
+                'email_verified_at' => now(),
+            ]
+        );
+
+        $suspendedMerchant = Merchant::updateOrCreate(
+            ['slug' => 'suspended-old-bakery'],
+            [
+                'user_id' => $suspendedOwner->id,
+                'business_name' => 'Suspended Old Bakery',
+                'category' => 'bakery',
+                'description' => 'Traditional bakery currently suspended.',
+                'phone' => '9851000004',
+                'address' => 'Patan, Lalitpur',
+                'timezone' => $timezone,
+                'currency' => 'NPR',
+                'status' => 'suspended',
+                'is_pro' => false,
+            ]
+        );
+
+        $suspendedProgram = LoyaltyProgram::updateOrCreate(
+            ['merchant_id' => $suspendedMerchant->id, 'name' => 'Old Bakery Bread Club'],
+            [
+                'description' => 'Earn free sourdough loaves after 10 visits.',
+                'status' => 'active',
+            ]
+        );
+
+        // 6b. Active Merchant with NO active program (only archived program)
+        $dormantOwner = User::updateOrCreate(
+            ['email' => 'dormant-owner@example.com'],
+            [
+                'name' => 'Dormant Owner',
+                'password' => Hash::make('secret123'),
+                'role' => 'merchant',
+                'email_verified_at' => now(),
+            ]
+        );
+
+        $dormantMerchant = Merchant::updateOrCreate(
+            ['slug' => 'dormant-day-spa'],
+            [
+                'user_id' => $dormantOwner->id,
+                'business_name' => 'Dormant Day Spa',
+                'category' => 'spa',
+                'description' => 'Relaxing day spa with no currently active loyalty program.',
+                'phone' => '9851000005',
+                'address' => 'Pokhara',
+                'timezone' => $timezone,
+                'currency' => 'NPR',
+                'status' => 'active',
+                'is_pro' => false,
+            ]
+        );
+
+        LoyaltyProgram::updateOrCreate(
+            ['merchant_id' => $dormantMerchant->id, 'name' => 'Archived Spa Passport'],
+            [
+                'description' => 'Past loyalty program that has been archived.',
+                'status' => 'archived',
             ]
         );
     }

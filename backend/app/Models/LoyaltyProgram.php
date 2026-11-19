@@ -27,4 +27,9 @@ class LoyaltyProgram extends Model
     {
         return $this->hasMany(LoyaltyProgramVersion::class);
     }
+
+    public function stampCards(): HasMany
+    {
+        return $this->hasMany(StampCard::class);
+    }
 }
