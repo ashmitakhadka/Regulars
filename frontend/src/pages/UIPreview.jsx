@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   Button,
+  BackButton,
   Logo,
   Card,
   Input,
@@ -9,7 +11,12 @@ import {
   EmptyState,
   ErrorState,
 } from "../components/ui";
-import { faWallet } from "@fortawesome/free-solid-svg-icons";
+import {
+  faWallet,
+  faXmark,
+  faPen,
+  faTrash,
+} from "@fortawesome/free-solid-svg-icons";
 
 export const UIPreview = () => {
   const [inputValue, setInputValue] = useState("");
@@ -79,6 +86,9 @@ export const UIPreview = () => {
           <div className="flex flex-wrap items-center gap-3">
             <Button variant="onDark">Solid On-Dark</Button>
             <Button variant="onDarkOutline">Outline On-Dark</Button>
+            <Button size="icon" variant="onDarkOutline" aria-label="Close">
+              <FontAwesomeIcon icon={faXmark} />
+            </Button>
           </div>
         </div>
 
@@ -87,9 +97,29 @@ export const UIPreview = () => {
             Sizes
           </h3>
           <div className="flex flex-wrap items-center gap-3">
+            <Button size="xs">Extra small (xs)</Button>
             <Button size="sm">Small (sm)</Button>
             <Button size="md">Medium (md)</Button>
             <Button size="lg">Large (lg)</Button>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-ink-soft mb-3">
+            Icon buttons
+          </h3>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button size="icon" variant="soft" aria-label="Edit">
+              <FontAwesomeIcon icon={faPen} />
+            </Button>
+            <Button size="icon" variant="ghost" aria-label="Close">
+              <FontAwesomeIcon icon={faXmark} />
+            </Button>
+            <Button size="icon" variant="secondary" aria-label="Delete">
+              <FontAwesomeIcon icon={faTrash} />
+            </Button>
+            <BackButton to="/ui-preview" size="xs" iconOnly />
+            <BackButton to="/ui-preview" size="xs" />
           </div>
         </div>
 

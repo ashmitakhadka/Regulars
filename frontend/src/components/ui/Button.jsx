@@ -25,6 +25,7 @@ const sizes = {
   sm: "min-h-[44px] px-4 py-2 text-sm",
   md: "min-h-[44px] px-5 py-2.5 text-sm sm:text-base",
   lg: "min-h-[48px] px-7 py-3.5 text-base font-bold",
+  icon: "h-8 w-8 min-h-[32px] p-0 text-[13px]", // square, icon-only
 };
 
 export const Button = ({
