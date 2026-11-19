@@ -1,0 +1,19 @@
+meta {
+  name: 03 Customer Me
+  type: http
+  seq: 4
+}
+
+get {
+  url: http://localhost:8000/api/customer/me
+  body: none
+  auth: inherit
+}
+
+headers {
+  Accept: application/json
+  Origin: http://localhost:5173
+  Referer: http://localhost:5173
+  X-XSRF-TOKEN: {{xsrf_token}}
+}
+

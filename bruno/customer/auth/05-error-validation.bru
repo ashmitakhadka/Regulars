@@ -1,0 +1,30 @@
+meta {
+  name: 05 Error - Validation (422)
+  type: http
+  seq: 6
+}
+
+post {
+  url: http://localhost:8000/api/register/customer
+  body: json
+  auth: inherit
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+  Origin: http://localhost:5173
+  Referer: http://localhost:5173
+  X-XSRF-TOKEN: {{xsrf_token}}
+}
+
+body:json {
+  {
+    "name": "",
+    "email": "invalid-email",
+    "password": "short",
+    "password_confirmation": "mismatch",
+    "phone": "014234567"
+  }
+}
+

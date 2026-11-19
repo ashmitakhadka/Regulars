@@ -1,0 +1,30 @@
+meta {
+  name: 01 Register Customer
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:8000/api/register/customer
+  body: json
+  auth: inherit
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+  Origin: http://localhost:5173
+  Referer: http://localhost:5173
+  X-XSRF-TOKEN: {{xsrf_token}}
+}
+
+body:json {
+  {
+    "name": "Aayush Sharma",
+    "email": "customer@example.com",
+    "password": "Password123!",
+    "password_confirmation": "Password123!",
+    "phone": "+977-9812345678"
+  }
+}
+

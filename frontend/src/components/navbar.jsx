@@ -59,7 +59,7 @@ export const Navbar = () => {
           ) : (
             <>
               <Button
-                to="/merchant/login"
+                to="/sign-in"
                 variant="ghost"
                 size="md"
                 className="hidden sm:inline-flex"
@@ -67,7 +67,7 @@ export const Navbar = () => {
                 Log In
               </Button>
 
-              <Button to="/merchant/register" variant="primary" size="md">
+              <Button to="/sign-up" variant="primary" size="md">
                 Get Started
               </Button>
             </>
@@ -124,7 +124,7 @@ export const Navbar = () => {
             {!user && (
               <li className="border-t border-blush-200 pt-2 sm:hidden">
                 <Button
-                  to="/merchant/login"
+                  to="/sign-in"
                   onClick={close}
                   variant="ghost"
                   fullWidth

@@ -69,7 +69,7 @@ export const Footer = () => {
                 <>
                   <li>
                     <Link
-                      to="/merchant/login"
+                      to="/sign-in"
                       className={`text-sm font-semibold text-ink transition-colors hover:text-brand-800 sm:text-base ${focus}`}
                     >
                       Log In
@@ -77,7 +77,7 @@ export const Footer = () => {
                   </li>
                   <li className="pt-1">
                     <Button
-                      to="/merchant/register"
+                      to="/sign-up"
                       variant="primary"
                       size="sm"
                     >

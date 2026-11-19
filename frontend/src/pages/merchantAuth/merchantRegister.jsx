@@ -7,6 +7,7 @@ import api from "../../services/api";
 import toast from "react-hot-toast";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
+import { Logo } from "../../components/ui/Logo";
 
 export const MerchantRegistration = () => {
   const [step, setStep] = useState(1);
@@ -88,12 +89,7 @@ export const MerchantRegistration = () => {
       <div className="mx-auto grid max-w-4xl overflow-hidden rounded-2xl bg-white shadow-xl lg:grid-cols-2">
         {/* Left Section */}
         <section className="flex flex-col justify-between bg-[#F4F0EA] p-6 sm:p-8">
-          <Link
-            to="/"
-            className="text-3xl font-extrabold tracking-tight text-[#23140C]"
-          >
-            Regulars<span className="text-[#91040C]">.</span>
-          </Link>
+          <Logo size="lg" to="/" />
 
           <div className="my-12">
             <p className="mb-4 text-sm font-semibold uppercase tracking-widest text-[#91040C]">

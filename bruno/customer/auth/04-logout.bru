@@ -1,0 +1,19 @@
+meta {
+  name: 04 Logout Customer
+  type: http
+  seq: 5
+}
+
+post {
+  url: http://localhost:8000/api/logout/customer
+  body: none
+  auth: inherit
+}
+
+headers {
+  Accept: application/json
+  Origin: http://localhost:5173
+  Referer: http://localhost:5173
+  X-XSRF-TOKEN: {{xsrf_token}}
+}
+

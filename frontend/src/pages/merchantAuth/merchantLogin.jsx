@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import { useState } from "react";
 import { useAuth } from "../../auth/AuthContext";
+import { Logo } from "../../components/ui/Logo";
 
 export const MerchantLogin = () => {
   const navigate = useNavigate();
@@ -50,15 +51,20 @@ export const MerchantLogin = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f8f5ef] px-4 py-10">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
-        {/* Heading */}
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-[#23140c]">Welcome Back!</h1>
-
-          <p className="mt-2 text-gray-500">
-            Login to manage your business and rewards.
-          </p>
+      <div className="w-full max-w-md text-center">
+        <div className="mb-6 flex justify-center">
+          <Logo size="lg" to="/" />
         </div>
+
+        <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg text-left">
+          {/* Heading */}
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-bold text-[#23140c]">Welcome Back!</h1>
+
+            <p className="mt-2 text-gray-500">
+              Login to manage your business and rewards.
+            </p>
+          </div>
 
         {/* Login Form */}
         <form onSubmit={handleSubmit(handleLogin)} className="space-y-5">
@@ -132,6 +138,7 @@ export const MerchantLogin = () => {
             Register here
           </Link>
         </p>
+        </div>
       </div>
     </div>
   );
