@@ -74,7 +74,7 @@ class CustomerDemoSeeder extends Seeder
                 'card_progress' => 4, // Mid-level progress (4/8)
                 'current_streak' => 1,
                 'longest_streak' => 3,
-                'last_visit' => $todayNepal,
+                'last_visit' => $yesterdayNepal,
             ],
             [
                 'email' => 'kavre-fitness@example.com',
@@ -245,12 +245,19 @@ class CustomerDemoSeeder extends Seeder
         // -------------------------------------------------------------
         $cafe = $seededMerchants['himalayan-java'];
         $cafeQr = MerchantQrCode::where('merchant_id', $cafe->id)->where('type', 'permanent')->first();
+        $cafeCard = StampCard::where('customer_id', $customer->id)
+            ->where('loyalty_program_id', $seededPrograms['himalayan-java']->id)
+            ->first();
 
-        // Clear existing demo visits for idempotency
+        // Clear existing demo visits and their transactions for idempotency
+        $existingVisitIds = Visit::where('customer_id', $customer->id)->pluck('id');
+        StampTransaction::where('source_type', 'visit')
+            ->whereIn('source_id', $existingVisitIds)
+            ->delete();
         Visit::where('customer_id', $customer->id)->delete();
 
         // 3a. Successful visit yesterday
-        Visit::create([
+        $visitYesterday = Visit::create([
             'merchant_id' => $cafe->id,
             'customer_id' => $customer->id,
             'merchant_qr_code_id' => $cafeQr->id,
@@ -261,8 +268,17 @@ class CustomerDemoSeeder extends Seeder
             'rejection_reason' => null,
         ]);
 
+        StampTransaction::create([
+            'stamp_card_id' => $cafeCard->id,
+            'program_version_id' => $seededVersions['himalayan-java']->id,
+            'source_type' => 'visit',
+            'source_id' => $visitYesterday->id,
+            'stamps_awarded' => 1,
+            'created_at' => Carbon::now($timezone)->subDay()->setTime(9, 30),
+        ]);
+
         // 3b. Successful visit today
-        Visit::create([
+        $visitToday = Visit::create([
             'merchant_id' => $cafe->id,
             'customer_id' => $customer->id,
             'merchant_qr_code_id' => $cafeQr->id,
@@ -271,6 +287,15 @@ class CustomerDemoSeeder extends Seeder
             'timezone' => $timezone,
             'status' => 'successful',
             'rejection_reason' => null,
+        ]);
+
+        StampTransaction::create([
+            'stamp_card_id' => $cafeCard->id,
+            'program_version_id' => $seededVersions['himalayan-java']->id,
+            'source_type' => 'visit',
+            'source_id' => $visitToday->id,
+            'stamps_awarded' => 1,
+            'created_at' => Carbon::now($timezone)->setTime(10, 15),
         ]);
 
         // 3c. Rejected visit today (Rule 8: attempt recorded with rejection reason)

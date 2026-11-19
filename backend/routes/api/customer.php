@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Customer\CustomerAuthController;
 use App\Http\Controllers\Api\Customer\CustomerBusinessController;
+use App\Http\Controllers\Api\Customer\CustomerWalletController;
 use Illuminate\Support\Facades\Route;
 
 // Public customer authentication endpoints
@@ -17,5 +18,9 @@ Route::middleware(['auth:sanctum', 'customer'])->group(function () {
     Route::get('/customer/businesses', [CustomerBusinessController::class, 'index']);
     Route::get('/customer/businesses/{slug}', [CustomerBusinessController::class, 'show']);
     Route::get('/customer/programs/{id}', [CustomerBusinessController::class, 'showProgram']);
+
+    // Customer Wallet & Stamp Cards
+    Route::get('/customer/wallet', [CustomerWalletController::class, 'index']);
+    Route::get('/customer/stamp-cards/{id}', [CustomerWalletController::class, 'show']);
 });
 
