@@ -1,16 +1,70 @@
 import { Link } from "react-router-dom";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faGift,
-  faStar,
-  faClock,
-  faArrowRight,
-  faCalendarDays,
-  faBarcode,
-  faBoxesStacked,
-  faLayerGroup,
-} from "@fortawesome/free-solid-svg-icons";
-import { LoyaltyProgramStatus } from "./LoyaltyProgramStatus";
+import { Button } from "../../ui";
+
+const MAX_STAMP_CIRCLES = 12;
+
+const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+// One readable sentence instead of several labeled boxes.
+const getEarningSummary = (rule, tiers, productRules) => {
+  if (!rule) return "Earning rules not set";
+
+  const threshold = Number(rule.threshold) || 0;
+  const stamps = Number(rule.stamps_awarded) || 1;
+  const earns = `earn ${plural(stamps, "stamp")}`;
+
+  switch (rule.earning_type) {
+    case "visit":
+      return threshold > 1
+        ? `Visit ${threshold} times, ${earns}`
+        : `Every visit, ${earns}`;
+
+    case "quantity":
+      return productRules.length > 0
+        ? `Buy items from ${plural(productRules.length, "product")}, earn stamps per item`
+        : "Earn stamps per item purchased";
+
+    case "purchase": {
+      if (tiers.length > 0) {
+        const minAmount = Number(tiers[0]?.min_amount || 0).toLocaleString();
+        const maxStamps = Math.max(
+          ...tiers.map((t) => Number(t.stamps_awarded) || 1),
+        );
+        return `Spend tiers from NPR ${minAmount}, up to ${plural(maxStamps, "stamp")}`;
+      }
+      return threshold > 0
+        ? `Spend NPR ${threshold.toLocaleString()}, ${earns}`
+        : `Any purchase, ${earns}`;
+    }
+
+    default:
+      return "Loyalty program";
+  }
+};
+
+// Reward titles as plain text (validity only when the API provides it).
+const getRewardInfo = (reward, productRules, isQuantity) => {
+  if (isQuantity) {
+    const titles = productRules
+      .map((r) => r.reward?.title || r.reward_title)
+      .filter(Boolean);
+
+    return {
+      titles: titles.length
+        ? titles.slice(0, 2)
+        : ["Individual product rewards"],
+      extra: Math.max(titles.length - 2, 0),
+    };
+  }
+
+  if (!reward) return null;
+
+  return {
+    titles: [reward.title],
+    extra: 0,
+    validity: reward.voucher_validity_days,
+  };
+};
 
 export const LoyaltyProgramCard = ({ program }) => {
   // Extract active or latest version safely
@@ -25,215 +79,107 @@ export const LoyaltyProgramCard = ({ program }) => {
     earningRule?.product_rules || earningRule?.productRules || [];
   const reward = activeVersion?.reward;
 
-  const isTiered =
-    earningRule?.earning_type === "purchase" && tiers.length > 0;
   const isQuantity = earningRule?.earning_type === "quantity";
+  const isArchived = program.status === "archived";
 
-  // Format earning type label
-  const formatEarningType = () => {
-    if (earningRule?.earning_type === "visit") return "Per Visit";
-    if (isTiered) return `Spend Tiers (${tiers.length})`;
-    if (earningRule?.earning_type === "purchase") return "Minimum Spend";
-    if (isQuantity) return `Product Quantity (${productRules.length})`;
-    return earningRule?.earning_type || "Loyalty";
-  };
+  // NOTE: adjust these field names to match your API.
+  const stampsRequired = Number(
+    reward?.stamps_required ?? activeVersion?.stamps_required ?? 0,
+  );
+  const enrolled = program.enrolled_count ?? program.enrollment_count;
 
-  // Find max stamps for tiered purchase
-  const maxTierStamps = isTiered
-    ? Math.max(...tiers.map((t) => Number(t.stamps_awarded) || 1))
-    : 1;
+  const rewardInfo = getRewardInfo(reward, productRules, isQuantity);
+  const circleCount = Math.min(stampsRequired, MAX_STAMP_CIRCLES);
 
   return (
-    <article className="group flex flex-col justify-between rounded-2xl bg-white p-6 shadow-[0_2px_12px_rgba(35,20,12,0.06)] transition-all hover:shadow-[0_6px_20px_rgba(35,20,12,0.1)]">
-      <div>
-        {/* Top Header: Title and Status */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3.5">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F4F0EA] text-[#23140C]">
-              <FontAwesomeIcon icon={faGift} className="h-5 w-5" />
-            </div>
-            <div>
-              <h3 className="font-display text-[17px] font-bold text-[#23140C] leading-snug">
-                <Link
-                  to={`/merchant/loyalty-programs/${program.id}`}
-                  className="hover:text-[#A51D27] transition-colors"
-                >
-                  {program.name}
-                </Link>
-              </h3>
-              {program.description ? (
-                <p className="mt-1.5 line-clamp-2 text-[13.5px] leading-relaxed text-[#23140C]/80">
-                  {program.description}
-                </p>
-              ) : (
-                <p className="mt-1 text-[13px] italic text-[#23140C]/60">
-                  No description provided
-                </p>
-              )}
-            </div>
-          </div>
-
-          <LoyaltyProgramStatus status={program.status} />
-        </div>
-
-        {/* Earning Rule & Reward Information */}
-        <div className="mt-6 grid grid-cols-2 gap-3.5 rounded-xl bg-[#F4F0EA]/70 p-4">
-          {/* Stamps required / Threshold */}
-          <div>
-            <p className="text-[13px] font-semibold text-[#23140C]/75">
-              {isQuantity
-                ? "Items Tracked"
-                : isTiered
-                ? "Starting Bracket"
-                : "Threshold"}
-            </p>
-            <p className="mt-1 text-[14.5px] font-bold text-[#23140C]">
-              {isQuantity ? (
-                <span>{productRules.length} product(s)</span>
-              ) : isTiered ? (
-                <span>
-                  NPR {Number(tiers[0]?.min_amount || 0).toLocaleString()}
-                </span>
-              ) : earningRule?.threshold ? (
-                <span>
-                  {earningRule.earning_type === "purchase" ? "NPR " : ""}
-                  {Number(earningRule.threshold).toLocaleString()}{" "}
-                  <span className="text-[13px] font-medium text-[#23140C]/70">
-                    {earningRule.earning_type === "visit" ? "visit(s)" : "spend"}
-                  </span>
-                </span>
-              ) : (
-                "—"
-              )}
-            </p>
-          </div>
-
-          {/* Stamps Awarded */}
-          <div>
-            <p className="text-[13px] font-semibold text-[#23140C]/75">
-              {isQuantity ? "Progress Rule" : "Stamps Awarded"}
-            </p>
-            <p className="mt-1 flex items-center gap-1.5 text-[14.5px] font-bold text-[#A51D27]">
-              <FontAwesomeIcon icon={faStar} className="h-3.5 w-3.5" />
-              <span>
-                {isQuantity
-                  ? "Per item purchase"
-                  : isTiered
-                  ? `Up to ${maxTierStamps} stamps`
-                  : `${earningRule?.stamps_awarded ?? 1} stamp${
-                      earningRule?.stamps_awarded > 1 ? "s" : ""
-                    }`}
-              </span>
-            </p>
-          </div>
-
-          {/* Earning Type */}
-          <div>
-            <p className="text-[13px] font-semibold text-[#23140C]/75">
-              Earning Type
-            </p>
-            <p className="mt-1 flex items-center gap-1.5 text-[13.5px] font-semibold text-[#23140C]/85">
-              <FontAwesomeIcon
-                icon={
-                  isQuantity
-                    ? faBoxesStacked
-                    : isTiered
-                    ? faLayerGroup
-                    : faBarcode
-                }
-                className="h-3.5 w-3.5 text-[#23140C]/60"
-              />
-              <span>{formatEarningType()}</span>
-            </p>
-          </div>
-
-          {/* Daily Limit */}
-          <div>
-            <p className="text-[13px] font-semibold text-[#23140C]/75">
-              Daily Limit
-            </p>
-            <p className="mt-1 flex items-center gap-1.5 text-[13.5px] font-semibold text-[#23140C]/85">
-              <FontAwesomeIcon
-                icon={faClock}
-                className="h-3.5 w-3.5 text-[#23140C]/60"
-              />
-              <span>
-                {earningRule?.daily_stamp_limit
-                  ? `${earningRule.daily_stamp_limit}/day`
-                  : "No limit"}
-              </span>
-            </p>
-          </div>
-        </div>
-
-        {/* Reward Highlight Box */}
-        {isQuantity ? (
-          <div className="mt-4 flex items-center justify-between border-t border-[#F4F0EA] pt-3.5 text-[13.5px]">
-            <div>
-              <p className="text-[13px] font-semibold text-[#23140C]/75">
-                Product Rewards
-              </p>
-              <p className="font-bold text-[#23140C] line-clamp-1 text-[14px]">
-                {productRules.length > 0
-                  ? productRules
-                      .map((r) => r.reward?.title || r.reward_title)
-                      .filter(Boolean)
-                      .slice(0, 2)
-                      .join(", ") + (productRules.length > 2 ? ` (+${productRules.length - 2} more)` : "")
-                  : "Individual product rewards"}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-[13px] font-semibold text-[#23140C]/75">
-                Reward Output
-              </p>
-              <p className="font-semibold text-[#A51D27] text-[13.5px]">
-                Auto Vouchers
-              </p>
-            </div>
-          </div>
-        ) : reward ? (
-          <div className="mt-4 flex items-center justify-between border-t border-[#F4F0EA] pt-3.5 text-[13.5px]">
-            <div>
-              <p className="text-[13px] font-semibold text-[#23140C]/75">
-                Reward
-              </p>
-              <p className="font-bold text-[#23140C] line-clamp-1 text-[14px]">
-                {reward.title}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-[13px] font-semibold text-[#23140C]/75">
-                Voucher Validity
-              </p>
-              <p className="flex items-center gap-1.5 font-semibold text-[#23140C]/85 text-[13.5px]">
-                <FontAwesomeIcon
-                  icon={faCalendarDays}
-                  className="h-3.5 w-3.5 text-[#23140C]/60"
-                />
-                <span>{reward.voucher_validity_days || 30} days</span>
-              </p>
-            </div>
-          </div>
-        ) : null}
-      </div>
-
-      {/* Footer Actions */}
-      <div className="mt-6 flex items-center justify-between border-t border-[#F4F0EA] pt-4">
-        <span className="text-[13px] font-medium text-[#23140C]/75">
-          Version {activeVersion?.version_number || 1}
-        </span>
-
+    <article
+      className={`flex h-full flex-col gap-4 rounded-2xl bg-white p-6 shadow-[0_2px_12px_rgba(35,20,12,0.06)] transition-shadow hover:shadow-[0_6px_20px_rgba(35,20,12,0.1)] ${
+        isArchived ? "opacity-75" : ""
+      }`}
+    >
+      {/* Name */}
+      <h3 className="font-display text-[17px] font-bold leading-snug text-[#23140C]">
         <Link
           to={`/merchant/loyalty-programs/${program.id}`}
-          className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#A51D27] hover:text-[#91040C] transition-colors"
+          className="transition-colors hover:text-[#A51D27]"
         >
-          <span>View Details</span>
-          <FontAwesomeIcon
-            icon={faArrowRight}
-            className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5"
-          />
+          {program.name}
         </Link>
+      </h3>
+
+      {/* Earn, reward and validity as labeled rows */}
+      <dl className="grid grid-cols-[4.5rem_1fr] items-baseline gap-x-3 gap-y-3">
+        <dt className="text-[12.5px] text-[#23140C]/60">Earn</dt>
+        <dd className="min-w-0 text-[14px] text-[#23140C]">
+          {getEarningSummary(earningRule, tiers, productRules)}
+
+          {/* Stamp card preview: the red circle is the reward */}
+          {circleCount > 0 && (
+            <span
+              className="mt-2 flex flex-wrap items-center gap-1.5"
+              role="img"
+              aria-label={`${plural(stampsRequired, "stamp")} required for the reward`}
+            >
+              {Array.from({ length: circleCount }).map((_, i) => (
+                <span
+                  key={i}
+                  className={`h-4 w-4 rounded-full ${
+                    i === stampsRequired - 1 ? "bg-[#A51D27]" : "bg-[#F4F0EA]"
+                  }`}
+                />
+              ))}
+
+              {stampsRequired > MAX_STAMP_CIRCLES && (
+                <span className="ml-1 text-[12.5px] font-medium text-[#23140C]/70">
+                  +{stampsRequired - MAX_STAMP_CIRCLES}
+                </span>
+              )}
+            </span>
+          )}
+        </dd>
+
+        {rewardInfo && (
+          <>
+            <dt className="text-[12.5px] text-[#23140C]/60">Reward</dt>
+            <dd className="min-w-0 text-[14px] text-[#23140C]">
+              {rewardInfo.titles.join(", ")}
+              {rewardInfo.extra > 0 && (
+                <span className="text-[#23140C]/70">
+                  {" "}
+                  (+{rewardInfo.extra} more)
+                </span>
+              )}
+            </dd>
+
+            {rewardInfo.validity && (
+              <>
+                <dt className="text-[12.5px] text-[#23140C]/60">Validity</dt>
+                <dd className="text-[14px] text-[#23140C]">
+                  {rewardInfo.validity} days
+                </dd>
+              </>
+            )}
+          </>
+        )}
+      </dl>
+
+      {/* Footer */}
+      <div className="mt-auto flex items-center justify-between gap-3 pt-1">
+        {enrolled != null && (
+          <p className="text-[13px] text-[#23140C]/70">
+            {Number(enrolled).toLocaleString()} enrolled
+          </p>
+        )}
+
+        <Button
+          className="ml-auto"
+          variant="soft"
+          size="xs"
+          to={`/merchant/loyalty-programs/${program.id}`}
+          aria-label={`View details for ${program.name}`}
+        >
+          View details
+        </Button>
       </div>
     </article>
   );
