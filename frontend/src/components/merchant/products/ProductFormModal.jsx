@@ -58,7 +58,7 @@ export const ProductFormModal = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-white/40 p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="product-modal-title"
@@ -158,10 +158,10 @@ export const ProductFormModal = ({
             </div>
           )}
 
-          <div className="flex items-center justify-end gap-2 border-t border-blush-200 pt-4">
+          <div className="flex items-center justify-end gap-2  pt-2">
             <Button
               type="button"
-              variant="ghost"
+              variant="soft"
               size="sm"
               onClick={onClose}
               disabled={isSubmitting}
@@ -175,7 +175,7 @@ export const ProductFormModal = ({
               loading={isSubmitting}
               disabled={isSubmitting}
             >
-              {isEditing ? "Save changes" : "Add product"}
+              {isEditing ? "Save changes" : "Add "}
             </Button>
           </div>
         </form>
