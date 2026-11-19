@@ -1,30 +1,22 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import toast from "react-hot-toast";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faUserPlus,
-  faXmark,
-  faCheck,
-  faIdCard,
-  faPhone,
-} from "@fortawesome/free-solid-svg-icons";
-import { Button, Spinner } from "../../ui";
+import { faXmark } from "@fortawesome/free-solid-svg-icons";
+import { Button, Input, Spinner } from "../../ui";
 import { customerService } from "../../../services/customerService";
 import { loyaltyProgramService } from "../../../services/loyaltyProgramService";
+import { enrollCustomerSchema } from "../../../schema/enrollCustomerSchema";
 
-const enrollSchema = z.object({
-  loyalty_program_id: z.coerce
-    .number({ invalid_type_error: "Please select a loyalty program." })
-    .min(1, "Please select an active loyalty program."),
-  identifier_type: z.enum(["customer_code", "phone"]),
-  identifier: z
-    .string()
-    .trim()
-    .min(1, "Customer identifier is required."),
-});
+const EMPTY = {
+  identifier_type: "customer_code",
+  identifier: "",
+  loyalty_program_id: "",
+};
+
+const fieldClass =
+  "w-full rounded-lg border border-blush-200 bg-white px-3 py-2 text-sm text-ink transition focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-ink/10 disabled:opacity-60";
 
 export const EnrollCustomerModal = ({ isOpen, onClose, onEnrolled }) => {
   const [programs, setPrograms] = useState([]);
@@ -38,52 +30,42 @@ export const EnrollCustomerModal = ({ isOpen, onClose, onEnrolled }) => {
     reset,
     formState: { errors },
   } = useForm({
-    resolver: zodResolver(enrollSchema),
-    defaultValues: {
-      identifier_type: "customer_code",
-      identifier: "",
-      loyalty_program_id: "",
-    },
+    resolver: zodResolver(enrollCustomerSchema),
+    defaultValues: EMPTY,
   });
 
-  const selectedType = watch("identifier_type");
+  const isCode = watch("identifier_type") === "customer_code";
 
   useEffect(() => {
-    if (isOpen) {
-      reset({
-        identifier_type: "customer_code",
-        identifier: "",
-        loyalty_program_id: "",
-      });
+    if (!isOpen) return;
+    let ignore = false;
 
-      setLoadingPrograms(true);
-      loyaltyProgramService
-        .getAllPrograms()
-        .then((res) => {
-          const activeOnly = (res.data || []).filter(
-            (p) => p.status === "active",
-          );
-          setPrograms(activeOnly);
-          if (activeOnly.length > 0) {
-            reset((prev) => ({
-              ...prev,
-              loyalty_program_id: activeOnly[0].id,
-            }));
-          }
-        })
-        .catch((err) => {
-          console.error("Failed to load programs for enrollment:", err);
-          toast.error("Could not load active loyalty programs.");
-        })
-        .finally(() => {
-          setLoadingPrograms(false);
-        });
-    }
+    reset(EMPTY);
+    setLoadingPrograms(true);
+
+    loyaltyProgramService
+      .getAllPrograms()
+      .then((res) => {
+        if (ignore) return;
+        const active = (res.data || []).filter((p) => p.status === "active");
+        setPrograms(active);
+        reset({ ...EMPTY, loyalty_program_id: active[0]?.id ?? "" });
+      })
+      .catch((err) => {
+        if (ignore) return;
+        console.error("Failed to load programs for enrollment:", err);
+        toast.error("Couldn't load active loyalty programs.");
+      })
+      .finally(() => !ignore && setLoadingPrograms(false));
+
+    return () => {
+      ignore = true;
+    };
   }, [isOpen, reset]);
 
   if (!isOpen) return null;
 
-  const handleEnroll = async (data) => {
+  const enroll = async (data) => {
     setIsSubmitting(true);
     try {
       const response = await customerService.enrollCustomer({
@@ -91,27 +73,24 @@ export const EnrollCustomerModal = ({ isOpen, onClose, onEnrolled }) => {
         identifier_type: data.identifier_type,
         identifier: data.identifier.trim(),
       });
-
-      toast.success(
-        response.message || "Customer enrolled in program successfully!",
-      );
+      toast.success(response.message || "Customer enrolled.");
       onEnrolled(response.data);
       onClose();
     } catch (err) {
       console.error("Customer enrollment error:", err);
-      if (err.response?.status === 404) {
-        toast.error("Customer not found. Please verify the code or phone.");
-      } else if (err.response?.status === 409) {
-        toast.error("Customer is already enrolled in this loyalty program.");
-      } else if (err.response?.status === 422 && err.response?.data?.errors) {
-        const errorMessages = Object.values(err.response.data.errors)
-          .flat()
-          .join(" ");
-        toast.error(errorMessages || "Please correct the highlighted errors.");
+      const status = err.response?.status;
+      const validation = err.response?.data?.errors;
+
+      if (status === 404) {
+        toast.error("Customer not found. Check the code or phone number.");
+      } else if (status === 409) {
+        toast.error("This customer is already enrolled in that program.");
+      } else if (status === 422 && validation) {
+        toast.error(Object.values(validation).flat().join(" "));
       } else {
         toast.error(
           err.response?.data?.message ||
-            "Unable to enroll customer. Please try again.",
+            "Couldn't enroll the customer. Try again.",
         );
       }
     } finally {
@@ -121,143 +100,91 @@ export const EnrollCustomerModal = ({ isOpen, onClose, onEnrolled }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#23140C]/50 p-4 backdrop-blur-xs"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-white/60 p-4 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-labelledby="enroll-modal-title"
     >
-      <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl sm:p-7">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#F4F0EA] pb-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F4F0EA] text-[#23140C]">
-              <FontAwesomeIcon icon={faUserPlus} className="h-4 w-4" />
-            </div>
-            <div>
-              <h2
-                id="enroll-modal-title"
-                className="font-display text-[18px] font-bold text-[#23140C]"
-              >
-                Enroll Customer
-              </h2>
-              <p className="text-[13px] text-[#23140C]/70">
-                Register an existing customer into an active loyalty program.
-              </p>
-            </div>
+      <div className="w-full max-w-md rounded-2xl border border-blush-200 bg-white p-6 shadow-xl">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2
+              id="enroll-modal-title"
+              className="font-display text-lg font-bold text-brand-900"
+            >
+              Enroll customer
+            </h2>
+            <p className="mt-0.5 text-sm text-ink-soft">
+              Add an existing customer to an active loyalty program.
+            </p>
           </div>
 
-          <button
+          <Button
             type="button"
+            size="icon"
+            variant="ghost"
+            aria-label="Close"
             onClick={onClose}
             disabled={isSubmitting}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-[#23140C]/50 hover:bg-[#F4F0EA] hover:text-[#23140C] transition"
-            aria-label="Close dialog"
           >
             <FontAwesomeIcon icon={faXmark} />
-          </button>
+          </Button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit(handleEnroll)} className="mt-5 space-y-4" noValidate>
-          {/* Identifier Type Selection */}
-          <div>
-            <label className="mb-2 block text-[14px] font-semibold text-[#23140C]">
-              Identification Method <span className="text-[#A51D27]">*</span>
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <label
-                className={`flex cursor-pointer items-center gap-2.5 rounded-xl border p-3 text-[13.5px] font-bold transition ${
-                  selectedType === "customer_code"
-                    ? "border-[#A51D27] bg-[#A51D27]/10 text-[#A51D27]"
-                    : "border-[#F4F0EA] bg-white text-[#23140C] hover:border-[#A51D27]/40"
-                }`}
-              >
-                <input
-                  type="radio"
-                  value="customer_code"
-                  {...register("identifier_type")}
-                  className="hidden"
-                />
-                <FontAwesomeIcon icon={faIdCard} />
-                <span>Customer Code</span>
-              </label>
-
-              <label
-                className={`flex cursor-pointer items-center gap-2.5 rounded-xl border p-3 text-[13.5px] font-bold transition ${
-                  selectedType === "phone"
-                    ? "border-[#A51D27] bg-[#A51D27]/10 text-[#A51D27]"
-                    : "border-[#F4F0EA] bg-white text-[#23140C] hover:border-[#A51D27]/40"
-                }`}
-              >
-                <input
-                  type="radio"
-                  value="phone"
-                  {...register("identifier_type")}
-                  className="hidden"
-                />
-                <FontAwesomeIcon icon={faPhone} />
-                <span>Phone Number</span>
-              </label>
-            </div>
-          </div>
-
-          {/* Identifier Value */}
+        <form
+          onSubmit={handleSubmit(enroll)}
+          className="mt-5 space-y-3"
+          noValidate
+        >
           <div>
             <label
-              htmlFor="identifier"
-              className="mb-1.5 block text-[14px] font-semibold text-[#23140C]"
+              htmlFor="identifier_type"
+              className="mb-1.5 block text-sm font-semibold text-ink"
             >
-              {selectedType === "customer_code"
-                ? "Customer Code"
-                : "Customer Phone Number"}{" "}
-              <span className="text-[#A51D27]">*</span>
+              Find customer by
             </label>
-            <input
-              id="identifier"
-              type="text"
-              placeholder={
-                selectedType === "customer_code"
-                  ? "e.g. RG-TEST001"
-                  : "e.g. 9841000000"
-              }
-              {...register("identifier")}
+            <select
+              id="identifier_type"
               disabled={isSubmitting}
-              className={`w-full rounded-xl border bg-white px-4 py-2.5 text-[14.5px] text-[#23140C] placeholder:text-[#23140C]/40 transition focus:outline-none focus:ring-2 disabled:bg-[#F4F0EA]/50 ${
-                errors.identifier
-                  ? "border-red-500 focus:border-red-600 focus:ring-red-500/20"
-                  : "border-[#F4F0EA] focus:border-[#A51D27] focus:ring-[#A51D27]/20"
-              }`}
-            />
-            {errors.identifier && (
-              <p className="mt-1 text-[13px] font-medium text-red-600">
-                {errors.identifier.message}
-              </p>
-            )}
+              className={fieldClass}
+              {...register("identifier_type")}
+            >
+              <option value="customer_code">Customer code</option>
+              <option value="phone">Phone number</option>
+            </select>
           </div>
 
-          {/* Program Selection */}
+          <Input
+            label={isCode ? "Customer code" : "Phone number"}
+            placeholder={isCode ? "RG-TEST001" : "9841000000"}
+            error={errors.identifier?.message}
+            disabled={isSubmitting}
+            {...register("identifier")}
+          />
+
           <div>
             <label
               htmlFor="loyalty_program_id"
-              className="mb-1.5 block text-[14px] font-semibold text-[#23140C]"
+              className="mb-1.5 block text-sm font-semibold text-ink"
             >
-              Select Active Loyalty Program <span className="text-[#A51D27]">*</span>
+              Loyalty program
             </label>
+
             {loadingPrograms ? (
-              <div className="flex items-center gap-2 py-2 text-[13px] text-[#23140C]/70">
+              <div className="flex items-center gap-2 py-2 text-sm text-ink-soft">
                 <Spinner size="sm" />
-                <span>Loading active programs...</span>
+                <span>Loading programs…</span>
               </div>
             ) : programs.length === 0 ? (
-              <p className="text-[13px] text-red-600">
-                No active loyalty programs available. Please create or activate a program first.
+              <p className="text-sm text-red-600">
+                No active programs. Create or activate one first.
               </p>
             ) : (
               <select
                 id="loyalty_program_id"
-                {...register("loyalty_program_id")}
                 disabled={isSubmitting}
-                className="w-full rounded-xl border border-[#F4F0EA] bg-white px-4 py-2.5 text-[14px] text-[#23140C] transition focus:border-[#A51D27] focus:outline-none focus:ring-2 focus:ring-[#A51D27]/20 disabled:bg-[#F4F0EA]/50"
+                className={fieldClass}
+                {...register("loyalty_program_id")}
               >
                 {programs.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -266,25 +193,24 @@ export const EnrollCustomerModal = ({ isOpen, onClose, onEnrolled }) => {
                 ))}
               </select>
             )}
+
             {errors.loyalty_program_id && (
-              <p className="mt-1 text-[13px] font-medium text-red-600">
+              <p className="mt-1 text-xs font-medium text-red-600">
                 {errors.loyalty_program_id.message}
               </p>
             )}
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-3 border-t border-[#F4F0EA] pt-4 mt-6">
+          <div className="flex items-center justify-end gap-2 pt-2">
             <Button
               type="button"
-              variant="ghost"
+              variant="soft"
               size="sm"
               onClick={onClose}
               disabled={isSubmitting}
             >
               Cancel
             </Button>
-
             <Button
               type="submit"
               variant="primary"
@@ -292,8 +218,7 @@ export const EnrollCustomerModal = ({ isOpen, onClose, onEnrolled }) => {
               loading={isSubmitting}
               disabled={isSubmitting || programs.length === 0}
             >
-              <FontAwesomeIcon icon={faCheck} />
-              <span>{isSubmitting ? "Enrolling..." : "Enroll Customer"}</span>
+              Enroll
             </Button>
           </div>
         </form>
@@ -303,4 +228,3 @@ export const EnrollCustomerModal = ({ isOpen, onClose, onEnrolled }) => {
 };
 
 export default EnrollCustomerModal;
-
