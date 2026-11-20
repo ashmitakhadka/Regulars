@@ -15,8 +15,12 @@ import { MerchantLogin } from "./pages/merchantAuth/merchantLogin";
 import Login from "./pages/customer/Login";
 import Register from "./pages/customer/Register";
 import Join from "./pages/customer/Join";
+import ProgramJoin from "./pages/customer/ProgramJoin";
 import Wallet from "./pages/customer/Wallet";
 import CardDetail from "./pages/customer/CardDetail";
+import Businesses from "./pages/customer/Businesses";
+import BusinessDetail from "./pages/customer/BusinessDetail";
+import ProgramDetail from "./pages/customer/ProgramDetail";
 import Vouchers from "./pages/customer/Vouchers";
 import VoucherDetail from "./pages/customer/VoucherDetail";
 import Profile from "./pages/customer/Profile";
@@ -79,6 +83,7 @@ const router = createBrowserRouter([
       { path: "/login", element: <Login /> },
       { path: "/register", element: <Register /> },
       { path: "/join/:merchantSlug", element: <Join /> },
+      { path: "/businesses/:slug/programs/:id/join", element: <ProgramJoin /> },
 
       // Protected Customer Pages
       {
@@ -90,6 +95,9 @@ const router = createBrowserRouter([
         children: [
           { path: "/wallet", element: <Wallet /> },
           { path: "/wallet/:cardId", element: <CardDetail /> },
+          { path: "/businesses", element: <Businesses /> },
+          { path: "/businesses/:slug", element: <BusinessDetail /> },
+          { path: "/businesses/:slug/programs/:id", element: <ProgramDetail /> },
           { path: "/vouchers", element: <Vouchers /> },
           { path: "/vouchers/:id", element: <VoucherDetail /> },
           { path: "/profile", element: <Profile /> },

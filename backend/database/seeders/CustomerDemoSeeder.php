@@ -40,6 +40,7 @@ class CustomerDemoSeeder extends Seeder
                 'email' => 'himalayan-java@example.com',
                 'owner_name' => 'Bikash Shrestha',
                 'business_name' => 'Himalayan Java Cafe',
+                'category' => 'cafe',
                 'slug' => 'himalayan-java',
                 'description' => 'Locally sourced artisan coffee, handcrafted espresso, and fresh bakery in Kathmandu.',
                 'phone' => '9851000001',
@@ -59,6 +60,7 @@ class CustomerDemoSeeder extends Seeder
                 'email' => 'glow-salon@example.com',
                 'owner_name' => 'Sunita Rai',
                 'business_name' => 'Glow Beauty Salon',
+                'category' => 'salon',
                 'slug' => 'glow-beauty-salon',
                 'description' => 'Modern hair styling, organic skincare, and nail art studio.',
                 'phone' => '9851000002',
@@ -72,12 +74,13 @@ class CustomerDemoSeeder extends Seeder
                 'card_progress' => 4, // Mid-level progress (4/8)
                 'current_streak' => 1,
                 'longest_streak' => 3,
-                'last_visit' => $todayNepal,
+                'last_visit' => $yesterdayNepal,
             ],
             [
                 'email' => 'kavre-fitness@example.com',
                 'owner_name' => 'Rabin Tamang',
                 'business_name' => 'Kavre Fitness & Gym',
+                'category' => 'gym',
                 'slug' => 'kavre-fitness-gym',
                 'description' => 'State of the art strength training, cardio floor, and functional training zone.',
                 'phone' => '9851000003',
@@ -132,6 +135,7 @@ class CustomerDemoSeeder extends Seeder
                 [
                     'user_id' => $owner->id,
                     'business_name' => $data['business_name'],
+                    'category' => $data['category'] ?? null,
                     'description' => $data['description'],
                     'phone' => $data['phone'],
                     'address' => $data['address'],
@@ -241,12 +245,19 @@ class CustomerDemoSeeder extends Seeder
         // -------------------------------------------------------------
         $cafe = $seededMerchants['himalayan-java'];
         $cafeQr = MerchantQrCode::where('merchant_id', $cafe->id)->where('type', 'permanent')->first();
+        $cafeCard = StampCard::where('customer_id', $customer->id)
+            ->where('loyalty_program_id', $seededPrograms['himalayan-java']->id)
+            ->first();
 
-        // Clear existing demo visits for idempotency
+        // Clear existing demo visits and their transactions for idempotency
+        $existingVisitIds = Visit::where('customer_id', $customer->id)->pluck('id');
+        StampTransaction::where('source_type', 'visit')
+            ->whereIn('source_id', $existingVisitIds)
+            ->delete();
         Visit::where('customer_id', $customer->id)->delete();
 
         // 3a. Successful visit yesterday
-        Visit::create([
+        $visitYesterday = Visit::create([
             'merchant_id' => $cafe->id,
             'customer_id' => $customer->id,
             'merchant_qr_code_id' => $cafeQr->id,
@@ -257,8 +268,17 @@ class CustomerDemoSeeder extends Seeder
             'rejection_reason' => null,
         ]);
 
+        StampTransaction::create([
+            'stamp_card_id' => $cafeCard->id,
+            'program_version_id' => $seededVersions['himalayan-java']->id,
+            'source_type' => 'visit',
+            'source_id' => $visitYesterday->id,
+            'stamps_awarded' => 1,
+            'created_at' => Carbon::now($timezone)->subDay()->setTime(9, 30),
+        ]);
+
         // 3b. Successful visit today
-        Visit::create([
+        $visitToday = Visit::create([
             'merchant_id' => $cafe->id,
             'customer_id' => $customer->id,
             'merchant_qr_code_id' => $cafeQr->id,
@@ -267,6 +287,15 @@ class CustomerDemoSeeder extends Seeder
             'timezone' => $timezone,
             'status' => 'successful',
             'rejection_reason' => null,
+        ]);
+
+        StampTransaction::create([
+            'stamp_card_id' => $cafeCard->id,
+            'program_version_id' => $seededVersions['himalayan-java']->id,
+            'source_type' => 'visit',
+            'source_id' => $visitToday->id,
+            'stamps_awarded' => 1,
+            'created_at' => Carbon::now($timezone)->setTime(10, 15),
         ]);
 
         // 3c. Rejected visit today (Rule 8: attempt recorded with rejection reason)
@@ -389,6 +418,80 @@ class CustomerDemoSeeder extends Seeder
                 'claim_expires_at' => Carbon::now($timezone)->addDays(4),
                 'claimed_at' => null,
                 'voucher_id' => null,
+            ]
+        );
+
+        // -------------------------------------------------------------
+        // 6. Edge Case Merchants for Customer Directory Testing
+        // -------------------------------------------------------------
+
+        // 6a. Suspended Merchant (has an active program, but merchant itself is suspended)
+        $suspendedOwner = User::updateOrCreate(
+            ['email' => 'suspended-owner@example.com'],
+            [
+                'name' => 'Suspended Owner',
+                'password' => Hash::make('secret123'),
+                'role' => 'merchant',
+                'email_verified_at' => now(),
+            ]
+        );
+
+        $suspendedMerchant = Merchant::updateOrCreate(
+            ['slug' => 'suspended-old-bakery'],
+            [
+                'user_id' => $suspendedOwner->id,
+                'business_name' => 'Suspended Old Bakery',
+                'category' => 'bakery',
+                'description' => 'Traditional bakery currently suspended.',
+                'phone' => '9851000004',
+                'address' => 'Patan, Lalitpur',
+                'timezone' => $timezone,
+                'currency' => 'NPR',
+                'status' => 'suspended',
+                'is_pro' => false,
+            ]
+        );
+
+        $suspendedProgram = LoyaltyProgram::updateOrCreate(
+            ['merchant_id' => $suspendedMerchant->id, 'name' => 'Old Bakery Bread Club'],
+            [
+                'description' => 'Earn free sourdough loaves after 10 visits.',
+                'status' => 'active',
+            ]
+        );
+
+        // 6b. Active Merchant with NO active program (only archived program)
+        $dormantOwner = User::updateOrCreate(
+            ['email' => 'dormant-owner@example.com'],
+            [
+                'name' => 'Dormant Owner',
+                'password' => Hash::make('secret123'),
+                'role' => 'merchant',
+                'email_verified_at' => now(),
+            ]
+        );
+
+        $dormantMerchant = Merchant::updateOrCreate(
+            ['slug' => 'dormant-day-spa'],
+            [
+                'user_id' => $dormantOwner->id,
+                'business_name' => 'Dormant Day Spa',
+                'category' => 'spa',
+                'description' => 'Relaxing day spa with no currently active loyalty program.',
+                'phone' => '9851000005',
+                'address' => 'Pokhara',
+                'timezone' => $timezone,
+                'currency' => 'NPR',
+                'status' => 'active',
+                'is_pro' => false,
+            ]
+        );
+
+        LoyaltyProgram::updateOrCreate(
+            ['merchant_id' => $dormantMerchant->id, 'name' => 'Archived Spa Passport'],
+            [
+                'description' => 'Past loyalty program that has been archived.',
+                'status' => 'archived',
             ]
         );
     }

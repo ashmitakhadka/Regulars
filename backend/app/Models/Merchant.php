@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 #[Fillable([
     'user_id',
     'business_name',
+    'category',
     'slug',
     'description',
     'phone',

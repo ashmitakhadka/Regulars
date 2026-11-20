@@ -1,0 +1,16 @@
+info:
+  name: 04 List Businesses - Pagination
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: http://localhost:8000/api/customer/businesses?page=1&per_page=2
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

@@ -15,7 +15,7 @@ export const Profile = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-brand-900">
+        <h1 className="font-display text-2xl sm:text-[28px] font-bold text-brand-900">
           Customer Profile
         </h1>
         <p className="text-sm text-ink-soft mt-1">
