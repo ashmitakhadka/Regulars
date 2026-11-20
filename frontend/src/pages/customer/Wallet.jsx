@@ -1,103 +1,129 @@
-import { Link } from "react-router-dom";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFire } from "@fortawesome/free-solid-svg-icons";
-import { Card } from "../../components/ui/Card";
-import { Tag } from "../../components/ui/Tag";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { walletService } from "../../services/customer/walletService";
+import { WalletCard } from "../../components/customer/WalletCard";
+import { Spinner } from "../../components/ui/Spinner";
+import { EmptyState } from "../../components/ui/EmptyState";
+import { ErrorState } from "../../components/ui/ErrorState";
+import { Button } from "../../components/ui/Button";
 
+/**
+ * Customer Wallet page (/wallet).
+ * Displays active stamp cards with stamps progress, shop info, streaks, and wallet summary.
+ */
 export const Wallet = () => {
-  const demoCards = [
-    {
-      id: "1",
-      merchant: "Himalayan Java Cafe",
-      program: "Java Regulars Coffee Card",
-      stamps: 9,
-      threshold: 10,
-      streak: 5,
-      tag: "1 stamp left!",
-      tagVariant: "amber",
-    },
-    {
-      id: "2",
-      merchant: "Glow Beauty Salon",
-      program: "Glow VIP Treatment Card",
-      stamps: 4,
-      threshold: 8,
-      streak: 1,
-      tag: "Active",
-      tagVariant: "green",
-    },
-    {
-      id: "3",
-      merchant: "Kavre Fitness & Gym",
-      program: "Iron Streak Workout Card",
-      stamps: 2,
-      threshold: 12,
-      streak: 0,
-      tag: "Active",
-      tagVariant: "green",
-    },
-  ];
+  const [walletData, setWalletData] = useState({ cards: [], summary: {} });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const activeRequestIdRef = useRef(0);
+  const abortControllerRef = useRef(null);
+
+  const fetchWallet = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const requestId = ++activeRequestIdRef.current;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await walletService.getWallet(controller.signal);
+      if (requestId === activeRequestIdRef.current) {
+        setWalletData(response.data || { cards: [], summary: {} });
+        setLoading(false);
+      }
+    } catch (err) {
+      if (err.name === "CanceledError" || err.code === "ERR_CANCELED") {
+        return;
+      }
+      if (requestId === activeRequestIdRef.current) {
+        setError(
+          err.response?.data?.message || "We couldn't load your wallet. Please try again."
+        );
+        setLoading(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchWallet();
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [fetchWallet]);
+
+  const cards = walletData.cards || [];
+  const summary = walletData.summary || {};
+
+  const activeCount = summary.active_cards_count ?? cards.length;
+  const bizCount =
+    summary.businesses_joined_count ??
+    new Set(cards.map((c) => c.business?.id).filter(Boolean)).size;
+
+  const cardLabel = activeCount === 1 ? "card" : "cards";
+  const bizLabel = bizCount === 1 ? "business" : "businesses";
+  const summaryText =
+    activeCount > 0
+      ? `${activeCount} ${cardLabel} from ${bizCount} ${bizLabel}`
+      : "Your active loyalty stamp cards across local businesses.";
 
   return (
     <div className="space-y-6">
+      {/* Page Heading & One-line Summary */}
       <div>
         <h1 className="font-display text-2xl sm:text-[28px] font-bold text-brand-900">
-          My Wallet
+          My wallet
         </h1>
-        <p className="text-sm text-ink-soft mt-1">
-          Your loyalty stamp cards across all local businesses.
+        <p className="text-sm text-ink-soft mt-1 leading-normal">
+          {summaryText}
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {demoCards.map((card) => (
-          <Link key={card.id} to={`/wallet/${card.id}`} className="group block">
-            <Card className="h-full group-hover:shadow-[0_4px_16px_rgba(43,17,20,0.1)] transition-all">
-              <div className="flex items-start justify-between gap-2 mb-3">
-                <div>
-                  <h2 className="font-display text-lg font-bold text-brand-900 group-hover:text-brand-800 transition">
-                    {card.merchant}
-                  </h2>
-                  <p className="text-xs text-ink-soft">{card.program}</p>
-                </div>
-                <Tag variant={card.tagVariant}>{card.tag}</Tag>
-              </div>
+      {/* Loading State */}
+      {loading && (
+        <div className="flex flex-col items-center justify-center py-16" aria-live="polite">
+          <Spinner size="lg" className="text-brand-800" />
+          <p className="mt-3 text-sm text-ink-soft">Loading your stamp cards...</p>
+        </div>
+      )}
 
-              {/* Progress bar */}
-              <div className="mt-4">
-                <div className="flex justify-between text-xs font-semibold text-ink-soft mb-1.5">
-                  <span>Stamps collected</span>
-                  <span className="text-brand-900 font-bold">
-                    {card.stamps} / {card.threshold}
-                  </span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-blush-100">
-                  <div
-                    className="h-full rounded-full bg-brand-800 transition-all duration-300"
-                    style={{
-                      width: `${(card.stamps / card.threshold) * 100}%`,
-                    }}
-                  />
-                </div>
-              </div>
+      {/* Error State with Retry */}
+      {!loading && error && (
+        <ErrorState
+          title="Couldn't load your wallet"
+          message={error}
+          onRetry={fetchWallet}
+        />
+      )}
 
-              {/* Streak badge */}
-              <div className="mt-4 pt-3 border-t border-blush-100 flex items-center justify-between text-xs text-ink-soft">
-                <span className="inline-flex items-center gap-1.5 font-medium">
-                  <FontAwesomeIcon icon={faFire} className="text-brand-800" />
-                  {card.streak} day streak
-                </span>
-                <span className="font-semibold text-brand-800 group-hover:underline">
-                  View details &rarr;
-                </span>
-              </div>
-            </Card>
-          </Link>
-        ))}
-      </div>
+      {/* Empty State */}
+      {!loading && !error && cards.length === 0 && (
+        <EmptyState
+          title="No cards yet"
+          description="No cards yet. Scan a shop's QR code or browse businesses to join a loyalty program."
+          action={
+            <Button to="/businesses" variant="primary" size="md">
+              Browse businesses
+            </Button>
+          }
+        />
+      )}
+
+      {/* Responsive Grid of Wallet Cards (1 col on mobile, 2 col on desktop) */}
+      {!loading && !error && cards.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+          {cards.map((card) => (
+            <WalletCard key={card.id} card={card} />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
 
 export default Wallet;
-
