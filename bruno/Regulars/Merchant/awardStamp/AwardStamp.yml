@@ -10,10 +10,8 @@ http:
     type: json
     data: |-
       {
-          "stamp_card_id": 5,
-          "product_id": 3,
-          "quantity": 5,
-          "idempotency_key": "f80e8400-e29b-41d4-a716-446655440000"
+        "stamp_card_id": 9,
+        "idempotency_key": "c73a4198-b357-4c46-8d82-9e531f620739"
       }
   auth: inherit
 

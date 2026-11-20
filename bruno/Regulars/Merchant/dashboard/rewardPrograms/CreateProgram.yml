@@ -10,38 +10,17 @@ http:
     type: json
     data: |-
       {
-          "name": "Quantity Rewards",
-          "description": "Earn rewards by purchasing specific product quantities.",
-          "earning_type": "quantity",
-          "product_rules": [
-              {
-                  "product_id": 1,
-                  "quantity_required": 3,
-                  "reward_title": "Free Coffee",
-                  "reward_description": "Get one complimentary coffee.",
-                  "reward_type": "free_product",
-                  "reward_value": 0,
-                  "voucher_validity_days": 30
-              },
-              {
-                  "product_id": 2,
-                  "quantity_required": 2,
-                  "reward_title": "Free Sandwich",
-                  "reward_description": "Get one complimentary sandwich.",
-                  "reward_type": "free_product",
-                  "reward_value": 0,
-                  "voucher_validity_days": 30
-              },
-              {
-                  "product_id": 3,
-                  "quantity_required": 5,
-                  "reward_title": "Free Pastry",
-                  "reward_description": "Get one complimentary pastry.",
-                  "reward_type": "free_product",
-                  "reward_value": 0,
-                  "voucher_validity_days": 30
-              }
-          ]
+        "name": "Visit Rewards Test",
+        "description": "Testing visit-based reward completion.",
+        "earning_type": "visit",
+        "issues_voucher": true,
+        "threshold": 3,
+        "stamps_awarded": 2,
+        "reward_title": "Free Coffee",
+        "reward_description": "Get a complimentary coffee.",
+        "reward_type": "free_product",
+        "reward_value": 0,
+        "voucher_validity_days": 30
       }
   auth: inherit
 
