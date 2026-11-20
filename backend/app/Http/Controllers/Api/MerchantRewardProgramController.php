@@ -17,6 +17,7 @@ class MerchantRewardProgramController extends Controller
         $merchant = $this->getAuthenticatedMerchant($request);
 
         $programs = $merchant->loyaltyPrograms()
+        ->withCount('stampCards')
             ->with([
                 'versions.earningRule.tiers',
                 'versions.earningRule.productRules.product',
