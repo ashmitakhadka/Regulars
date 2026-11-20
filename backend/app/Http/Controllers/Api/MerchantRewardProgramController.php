@@ -17,7 +17,7 @@ class MerchantRewardProgramController extends Controller
         $merchant = $this->getAuthenticatedMerchant($request);
 
         $programs = $merchant->loyaltyPrograms()
-        ->withCount('stampCards')
+            ->withCount('stampCards')
             ->with([
                 'versions.earningRule.tiers',
                 'versions.earningRule.productRules.product',
@@ -33,10 +33,15 @@ class MerchantRewardProgramController extends Controller
         ]);
     }
 
-    // 2. Create a program with its earning configuration and rewards
+    // 2. Create a program with its earning configuration and optional rewards
     public function createProgram(Request $request)
     {
         $merchant = $this->getAuthenticatedMerchant($request);
+
+        // Voucher generation is enabled by default.
+        $request->merge([
+            'issues_voucher' => $request->input('issues_voucher', true),
+        ]);
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -48,6 +53,8 @@ class MerchantRewardProgramController extends Controller
             'stamps_awarded' => 'nullable|integer|min:1',
             'daily_stamp_limit' => 'nullable|integer|min:1',
 
+            'issues_voucher' => 'required|boolean',
+
             // Purchase tiers
             'tiers' => 'sometimes|array|min:1',
             'tiers.*.min_amount' => 'required_with:tiers|numeric|min:0.01',
@@ -58,23 +65,27 @@ class MerchantRewardProgramController extends Controller
             'product_rules' => 'required_if:earning_type,quantity|array|min:1',
             'product_rules.*.product_id' => 'required|integer|exists:products,id',
             'product_rules.*.quantity_required' => 'required|integer|min:1',
-            'product_rules.*.reward_title' => 'required|string|max:255',
+            'product_rules.*.reward_title' => 'required_if:issues_voucher,1|string|max:255',
             'product_rules.*.reward_description' => 'nullable|string',
-            'product_rules.*.reward_type' => 'required|string|max:50',
+            'product_rules.*.reward_type' => 'required_if:issues_voucher,1|string|max:50',
             'product_rules.*.reward_value' => 'nullable|numeric|min:0',
-            'product_rules.*.voucher_validity_days' => 'required|integer|min:1',
+            'product_rules.*.voucher_validity_days' => 'required_if:issues_voucher,1|integer|min:1',
 
             // Shared reward for visit and purchase
-            'reward_title' => 'required_unless:earning_type,quantity|string|max:255',
+            'reward_title' => 'required_if:issues_voucher,1|string|max:255',
             'reward_description' => 'nullable|string',
-            'reward_type' => 'required_unless:earning_type,quantity|string|max:50',
+            'reward_type' => 'required_if:issues_voucher,1|string|max:50',
             'reward_value' => 'nullable|numeric|min:0',
-            'voucher_validity_days' => 'required_unless:earning_type,quantity|integer|min:1',
+            'stamps_required' => 'required_if:earning_type,purchase|nullable|integer|min:1',
+            'voucher_validity_days' => 'required_if:issues_voucher,1|integer|min:1',
         ]);
 
         // Validate the earning configuration.
         if ($validated['earning_type'] === 'visit') {
-            if (empty($validated['threshold']) || empty($validated['stamps_awarded'])) {
+            if (
+                empty($validated['threshold']) ||
+                empty($validated['stamps_awarded'])
+            ) {
                 throw ValidationException::withMessages([
                     'threshold' => 'Visit threshold and stamps awarded are required.',
                 ]);
@@ -84,12 +95,21 @@ class MerchantRewardProgramController extends Controller
         if ($validated['earning_type'] === 'purchase') {
             $hasTiers = !empty($validated['tiers']);
 
-            if (!$hasTiers && (
-                empty($validated['threshold']) ||
-                empty($validated['stamps_awarded'])
-            )) {
+            if (
+                !$hasTiers &&
+                (
+                    empty($validated['threshold']) ||
+                    empty($validated['stamps_awarded'])
+                )
+            ) {
                 throw ValidationException::withMessages([
                     'threshold' => 'A purchase threshold and stamp count are required when tiers are not configured.',
+                ]);
+            }
+
+            if (empty($validated['stamps_required']) || (int) $validated['stamps_required'] < 1) {
+                throw ValidationException::withMessages([
+                    'stamps_required' => 'The number of stamps required to complete the reward is required for purchase programs.',
                 ]);
             }
         }
@@ -126,10 +146,12 @@ class MerchantRewardProgramController extends Controller
                 'status' => 'active',
             ]);
 
+            // Create program version.
             $version = $program->versions()->create([
                 'version_number' => 1,
                 'status' => 'active',
                 'effective_at' => now(),
+                'issues_voucher' => $validated['issues_voucher'],
             ]);
 
             $earningRule = $version->earningRule()->create([
@@ -162,13 +184,14 @@ class MerchantRewardProgramController extends Controller
                         'quantity_required' => $productRule['quantity_required'],
                     ]);
 
+                    // Create reward configuration for product
                     $ruleProduct->reward()->create([
                         'program_version_id' => $version->id,
-                        'title' => $productRule['reward_title'],
+                        'title' => $productRule['reward_title'] ?? 'Product Reward',
                         'description' => $productRule['reward_description'] ?? null,
-                        'reward_type' => $productRule['reward_type'],
+                        'reward_type' => $productRule['reward_type'] ?? 'free_item',
                         'reward_value' => $productRule['reward_value'] ?? null,
-                        'voucher_validity_days' => $productRule['voucher_validity_days'],
+                        'voucher_validity_days' => $productRule['voucher_validity_days'] ?? 30,
                     ]);
                 }
             }
@@ -176,11 +199,14 @@ class MerchantRewardProgramController extends Controller
             // Shared reward for visit and purchase programs
             if ($validated['earning_type'] !== 'quantity') {
                 $version->reward()->create([
-                    'title' => $validated['reward_title'],
+                    'title' => $validated['reward_title'] ?? ($validated['name'] . ' Reward'),
                     'description' => $validated['reward_description'] ?? null,
-                    'reward_type' => $validated['reward_type'],
+                    'reward_type' => $validated['reward_type'] ?? 'free_item',
                     'reward_value' => $validated['reward_value'] ?? null,
-                    'voucher_validity_days' => $validated['voucher_validity_days'],
+                    'stamps_required' => $validated['earning_type'] === 'purchase'
+                        ? (int) $validated['stamps_required']
+                        : null,
+                    'voucher_validity_days' => $validated['voucher_validity_days'] ?? 30,
                 ]);
             }
 

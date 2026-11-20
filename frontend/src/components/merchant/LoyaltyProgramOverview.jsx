@@ -150,10 +150,6 @@ export const LoyaltyProgramOverview = () => {
     <section className="mt-10 rounded-2xl bg-white p-6 shadow-[0_4px_24px_rgba(35,20,12,0.06)] sm:p-7">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#F4F0EA] text-[#23140C]">
-            <FontAwesomeIcon icon={faGift} />
-          </div>
-
           <div>
             <h2 className="font-display text-[18px] font-bold text-[#23140C]">
               Loyalty Programs
@@ -169,15 +165,6 @@ export const LoyaltyProgramOverview = () => {
             )}
           </div>
         </div>
-
-        <Button
-          variant="soft"
-          size="sm"
-          to="/merchant/loyalty-programs"
-          className="self-start sm:self-auto"
-        >
-          Manage programs
-        </Button>
       </div>
 
       <div className="mt-7 space-y-4">
@@ -267,13 +254,14 @@ export const LoyaltyProgramOverview = () => {
 
       {!loading && !error && hiddenCount > 0 && (
         <div className="mt-2 flex justify-end pt-2">
-          <Link
+          <Button
+            variant="soft"
+            size="xs"
             to="/merchant/loyalty-programs"
-            className="inline-flex items-center gap-2 text-[14px] font-semibold text-[#A51D27] transition hover:gap-3"
+            className="!rounded-lg"
           >
             View more
-            <FontAwesomeIcon icon={faArrowRight} />
-          </Link>
+          </Button>
         </div>
       )}
     </section>

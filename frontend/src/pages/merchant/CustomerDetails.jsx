@@ -1,425 +1,369 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faArrowLeft,
-  faUser,
-  faPhone,
   faEnvelope,
-  faIdCard,
-  faFire,
-  faStamp,
-  faTicket,
-  faCheckCircle,
-  faRotateRight,
-  faClock,
+  faPhone,
 } from "@fortawesome/free-solid-svg-icons";
+
 import { MerchantSidebar } from "../../components/merchant/MerchantSidebar";
 import { AwardStampsModal } from "../../components/merchant/customers/AwardStampsModal";
-import { Button, ErrorState, Spinner } from "../../components/ui";
+import { BackButton, Button, ErrorState, Spinner } from "../../components/ui";
 import { customerService } from "../../services/customerService";
+
+const LIST_PATH = "/merchant/customers";
+
+const formatDate = (value) => {
+  if (!value) return "—";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+};
+
+const errorMessage = (err) =>
+  err.response?.status === 404
+    ? "Customer not found or not enrolled in your loyalty programs."
+    : err.response?.data?.message ||
+      "Unable to load customer information. Please try again.";
+
+const ACTIVITY_STYLES = {
+  voucher_issued: { label: "Issued" },
+  voucher_redeemed: { label: "Redeemed" },
+  default: { label: "Voucher" },
+};
+
+const Card = ({ className = "", children }) => (
+  <section
+    className={`rounded-xl bg-white p-5 sm:p-6 shadow-[0_2px_12px_rgba(35,20,12,0.05)] ${className}`}
+  >
+    {children}
+  </section>
+);
 
 export const CustomerDetails = () => {
   const { id } = useParams();
+
   const [customer, setCustomer] = useState(null);
   const [activities, setActivities] = useState([]);
+  const [activityFilter, setActivityFilter] = useState("all");
+  const [visibleActivityCount, setVisibleActivityCount] = useState(5);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  // Award modal state
   const [awardingCardId, setAwardingCardId] = useState(null);
   const [isAwardModalOpen, setIsAwardModalOpen] = useState(false);
 
-  const loadData = async () => {
-    if (!id) return;
+  const reload = () => {
     setLoading(true);
-    setError(null);
-
-    try {
-      const [detailsRes, activityRes] = await Promise.all([
-        customerService.getCustomerDetails(id),
-        customerService.getCustomerActivity(id),
-      ]);
-
-      setCustomer(detailsRes.data);
-      setActivities(activityRes.data?.activities || []);
-    } catch (err) {
-      console.error("Failed to load customer details:", err);
-      if (err.response?.status === 404) {
-        setError("Customer not found or not enrolled in your loyalty programs.");
-      } else {
-        setError(
-          err.response?.data?.message ||
-            "Unable to load customer information. Please try again.",
-        );
-      }
-    } finally {
-      setLoading(false);
-    }
+    setReloadKey((k) => k + 1);
   };
 
   useEffect(() => {
-    let ignore = false;
-
     if (!id) return;
+
+    let ignore = false;
 
     Promise.all([
       customerService.getCustomerDetails(id),
       customerService.getCustomerActivity(id),
     ])
       .then(([detailsRes, activityRes]) => {
-        if (!ignore) {
-          setCustomer(detailsRes.data);
-          setActivities(activityRes.data?.activities || []);
-          setError(null);
-        }
+        if (ignore) return;
+
+        setCustomer(detailsRes.data);
+        setActivities(activityRes.data?.activities || []);
+        setError(null);
       })
       .catch((err) => {
-        if (!ignore) {
-          console.error("Failed to load customer details:", err);
-          if (err.response?.status === 404) {
-            setError("Customer not found or not enrolled in your loyalty programs.");
-          } else {
-            setError(
-              err.response?.data?.message ||
-                "Unable to load customer information. Please try again.",
-            );
-          }
-        }
+        if (ignore) return;
+
+        console.error("Failed to load customer details:", err);
+        setError(errorMessage(err));
       })
-      .finally(() => {
-        if (!ignore) setLoading(false);
-      });
+      .finally(() => !ignore && setLoading(false));
 
     return () => {
       ignore = true;
     };
-  }, [id]);
+  }, [id, reloadKey]);
 
-  const handleOpenAward = (cardId = null) => {
+  const openAward = (cardId = null) => {
     setAwardingCardId(cardId);
     setIsAwardModalOpen(true);
   };
 
-  const handleAwardSuccess = () => {
-    loadData();
-  };
+  const hasPrograms = customer?.programs?.length > 0;
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "—";
-    try {
-      return new Date(dateString).toLocaleString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-      });
-    } catch {
-      return dateString;
-    }
-  };
+  const filteredActivities = activities.filter((act) => {
+    if (activityFilter === "stamps") return act.type === "stamp_earned";
+    if (activityFilter === "vouchers") return act.type !== "stamp_earned";
+    return true;
+  });
+
+  const visibleActivities = filteredActivities.slice(0, visibleActivityCount);
 
   return (
     <div className="flex min-h-screen flex-col bg-white md:flex-row">
-      {/* Merchant Sidebar */}
       <MerchantSidebar />
 
-      {/* Main Content Area */}
-      <main className="w-full flex-1 p-5 sm:p-8">
-        {/* Back Link */}
-        <div className="mb-4">
-          <Link
-            to="/merchant/customers"
-            className="inline-flex items-center gap-2 text-[13.5px] font-semibold text-[#23140C]/75 hover:text-[#A51D27] transition"
-          >
-            <FontAwesomeIcon icon={faArrowLeft} />
-            <span>Back to Customers</span>
-          </Link>
-        </div>
+      <main className="w-full flex-1 bg-white p-4 sm:p-7 lg:p-8">
+        <div className="mx-auto max-w-5xl space-y-7">
+          {loading && (
+            <div className="flex min-h-[350px] flex-col items-center justify-center gap-3">
+              <Spinner size="md" />
+              <p className="text-sm text-[#23140C]/60">Loading customer…</p>
+            </div>
+          )}
 
-        {/* Loading State */}
-        {loading && (
-          <div className="flex min-h-[350px] flex-col items-center justify-center gap-3 rounded-2xl bg-[#F4F0EA]/40 p-8">
-            <Spinner size="md" />
-            <p className="text-[14px] font-medium text-[#23140C]/75">
-              Loading customer record...
-            </p>
-          </div>
-        )}
-
-        {/* Error State */}
-        {!loading && error && (
-          <div className="rounded-2xl border border-red-100 bg-red-50/40 p-8">
-            <ErrorState
-              title="Customer Not Found"
-              message={error}
-              action={
-                <div className="flex items-center gap-3">
-                  <Button variant="outline" size="sm" onClick={loadData}>
-                    <FontAwesomeIcon icon={faRotateRight} />
-                    <span>Try Again</span>
-                  </Button>
-                  <Button to="/merchant/customers" variant="primary" size="sm">
-                    Return to Customer List
-                  </Button>
-                </div>
-              }
-            />
-          </div>
-        )}
-
-        {/* Success View */}
-        {!loading && !error && customer && (
-          <div className="space-y-6">
-            {/* 1. Customer Overview Banner */}
-            <section className="rounded-2xl bg-white p-6 shadow-[0_2px_12px_rgba(35,20,12,0.06)] sm:p-7">
-              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#F4F0EA] text-[#23140C]">
-                    <FontAwesomeIcon icon={faUser} className="h-6 w-6" />
+          {!loading && error && (
+            <div className="rounded-xl bg-white p-8 shadow-[0_2px_12px_rgba(35,20,12,0.05)]">
+              <ErrorState
+                title="Customer not available"
+                message={error}
+                action={
+                  <div className="flex items-center gap-3">
+                    <Button variant="outline" size="sm" onClick={reload}>
+                      Try again
+                    </Button>
+                    <Button to={LIST_PATH} variant="primary" size="sm">
+                      Back to customers
+                    </Button>
                   </div>
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2.5">
-                      <h1 className="font-display text-[24px] sm:text-[26px] font-bold text-[#23140C]">
-                        {customer.name}
-                      </h1>
-                      <span className="rounded-full bg-[#A51D27]/10 px-2.5 py-0.5 text-xs font-bold text-[#A51D27]">
-                        {customer.customer_code}
-                      </span>
-                    </div>
+                }
+              />
+            </div>
+          )}
 
-                    <div className="mt-2 flex flex-wrap items-center gap-4 text-[13.5px] text-[#23140C]/75">
-                      {customer.phone && (
-                        <span className="flex items-center gap-1.5 font-medium">
-                          <FontAwesomeIcon icon={faPhone} className="text-[#23140C]/50 text-xs" />
-                          <span>{customer.phone}</span>
-                        </span>
-                      )}
-                      {customer.email && (
-                        <span className="flex items-center gap-1.5 font-medium">
-                          <FontAwesomeIcon icon={faEnvelope} className="text-[#23140C]/50 text-xs" />
-                          <span>{customer.email}</span>
-                        </span>
-                      )}
-                    </div>
+          {!loading && !error && customer && (
+            <div className="space-y-7">
+              {/* Customer Header */}
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-3 -ml-20">
+                  <div className="flex items-center gap-3">
+                    <BackButton size="xs" to={LIST_PATH} iconOnly />
+
+                    <h1 className="font-display text-xl font-bold text-[#23140C] sm:text-2xl">
+                      {customer.name}
+                    </h1>
                   </div>
+
+                  {customer.phone && (
+                    <span className="inline-flex items-center gap-1.5 text-xs text-[#23140C]/65">
+                      <FontAwesomeIcon
+                        icon={faPhone}
+                        className="text-[#23140C]/40"
+                      />
+                      {customer.phone}
+                    </span>
+                  )}
+
+                  {customer.email && (
+                    <span className="inline-flex items-center gap-1.5 text-xs text-[#23140C]/65">
+                      <FontAwesomeIcon
+                        icon={faEnvelope}
+                        className="text-[#23140C]/40"
+                      />
+                      {customer.email}
+                    </span>
+                  )}
                 </div>
 
-                <div className="flex items-center gap-4 rounded-xl bg-[#F4F0EA]/70 p-3.5">
-                  <div className="flex items-center gap-2 font-bold text-[#A51D27]">
-                    <FontAwesomeIcon icon={faFire} className="text-lg" />
-                    <div>
-                      <p className="text-[15px] font-bold leading-none">
-                        {customer.current_streak || 0} visits
-                      </p>
-                      <p className="text-[11px] font-medium text-[#23140C]/60">
-                        Current Streak
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="h-8 w-px bg-[#23140C]/10" />
-
-                  <div>
-                    <p className="text-[15px] font-bold text-[#23140C] leading-none">
-                      {customer.longest_streak || 0}
-                    </p>
-                    <p className="text-[11px] font-medium text-[#23140C]/60">
-                      Best Streak
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* 2. Active Stamp Cards */}
-            <section className="rounded-2xl bg-white p-6 shadow-[0_2px_12px_rgba(35,20,12,0.06)] sm:p-7">
-              <div className="flex items-center justify-between border-b border-[#F4F0EA] pb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F4F0EA] text-[#23140C]">
-                    <FontAwesomeIcon icon={faIdCard} className="h-4 w-4 text-[#A51D27]" />
-                  </div>
-                  <div>
-                    <h2 className="font-display text-[17px] font-bold text-[#23140C]">
-                      Enrolled Loyalty Programs
-                    </h2>
-                    <p className="text-[13px] text-[#23140C]/75">
-                      Active digital stamp cards for this customer
-                    </p>
-                  </div>
-                </div>
-
-                {customer.programs && customer.programs.length > 0 && (
+                {hasPrograms && (
                   <Button
                     variant="primary"
                     size="sm"
-                    onClick={() => handleOpenAward()}
+                    onClick={() => openAward()}
                   >
-                    <FontAwesomeIcon icon={faStamp} />
-                    <span>Award Stamps</span>
+                    Award stamps
                   </Button>
                 )}
               </div>
+              {/* Enrolled Loyalty Programs */}
+              <Card>
+                <div className="mb-5">
+                  <h2 className="font-display text-base font-bold text-[#23140C]">
+                    Enrolled loyalty programs
+                  </h2>
+                </div>
 
-              <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {customer.programs && customer.programs.length > 0 ? (
-                  customer.programs.map((card) => (
-                    <div
-                      key={card.stamp_card_id}
-                      className="flex flex-col justify-between rounded-xl border border-[#F4F0EA] bg-[#F4F0EA]/40 p-4 space-y-3"
-                    >
-                      <div>
-                        <div className="flex items-start justify-between gap-2">
-                          <h3 className="font-bold text-[#23140C] text-[15px]">
+                {hasPrograms ? (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {customer.programs.map((card) => (
+                      <button
+                        key={card.stamp_card_id}
+                        type="button"
+                        onClick={() => openAward(card.stamp_card_id)}
+                        className="flex items-center justify-between gap-4 rounded-lg bg-[#F4F0EC]/50 p-4 text-left transition-colors hover:bg-[#F4F0EA]"
+                      >
+                        <div className="min-w-0 space-y-1">
+                          <h3 className="truncate text-sm font-semibold text-[#23140C]">
                             {card.program_name}
                           </h3>
-                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-800">
-                            {card.status}
-                          </span>
+
+                          <p className="text-xs text-[#23140C]/55">
+                            Joined {formatDate(card.started_at)}
+                          </p>
                         </div>
 
-                        <p className="mt-2 text-[20px] font-bold text-[#A51D27]">
-                          {card.stamps_earned}{" "}
-                          <span className="text-[13px] font-semibold text-[#23140C]/75">
-                            stamps earned
+                        <div className="shrink-0 text-right">
+                          <span className="text-lg font-bold text-[#A51D27]">
+                            {card.stamps_earned}
                           </span>
-                        </p>
-                      </div>
-
-                      <div className="flex items-center justify-between border-t border-[#F4F0EA] pt-2.5">
-                        <span className="text-[11.5px] text-[#23140C]/60">
-                          Started: {formatDate(card.started_at)}
-                        </span>
-
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleOpenAward(card.stamp_card_id)}
-                        >
-                          <FontAwesomeIcon icon={faStamp} className="text-xs" />
-                          <span>Award</span>
-                        </Button>
-                      </div>
-                    </div>
-                  ))
+                          <span className="block text-[11px] font-medium text-[#23140C]/45">
+                            stamps
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 ) : (
-                  <p className="text-[13.5px] italic text-[#23140C]/60">
-                    No active loyalty programs for this customer.
+                  <p className="py-3 text-sm text-[#23140C]/60">
+                    This customer is not enrolled in any loyalty program.
                   </p>
                 )}
-              </div>
-            </section>
+              </Card>
 
-            {/* 3. Chronological Customer Activity History */}
-            <section className="rounded-2xl bg-white p-6 shadow-[0_2px_12px_rgba(35,20,12,0.06)] sm:p-7">
-              <div className="flex items-center gap-2.5 border-b border-[#F4F0EA] pb-4">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F4F0EA] text-[#23140C]">
-                  <FontAwesomeIcon icon={faClock} className="h-4 w-4 text-[#A51D27]" />
+              {/* Recent Activity */}
+              <Card>
+                <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <h2 className="font-display text-md font-bold text-[#23140C]">
+                      Recent activity
+                    </h2>
+                    <p className="mt-1 text-sm text-[#23140C]/50">
+                      Customer's stamps and voucher history.
+                    </p>
+                  </div>
+
+                  {activities.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      {[
+                        { id: "all", label: "All" },
+                        { id: "stamps", label: "Stamps" },
+                        { id: "vouchers", label: "Vouchers" },
+                      ].map((tab) => (
+                        <Button
+                          key={tab.id}
+                          type="button"
+                          variant="soft"
+                          size="xs"
+                          onClick={() => {
+                            setActivityFilter(tab.id);
+                            setVisibleActivityCount(5);
+                          }}
+                          className={
+                            activityFilter === tab.id
+                              ? "bg-[#A51D27]/10 text-[#A51D27]"
+                              : ""
+                          }
+                        >
+                          {tab.label}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <h2 className="font-display text-[17px] font-bold text-[#23140C]">
-                    Customer Activity Log
-                  </h2>
-                  <p className="text-[13px] text-[#23140C]/75">
-                    Chronological history of stamps earned and reward vouchers
-                  </p>
-                </div>
-              </div>
 
-              {activities.length > 0 ? (
-                <div className="mt-5 divide-y divide-[#F4F0EA]">
-                  {activities.map((act, idx) => {
-                    const isStamp = act.type === "stamp_earned";
-                    const isVoucherIssue = act.type === "voucher_issued";
+                {filteredActivities.length > 0 ? (
+                  <>
+                    <ul className="divide-y divide-[#23140C]/[0.06]">
+                      {visibleActivities.map((act, idx) => {
+                        const style =
+                          ACTIVITY_STYLES[act.type] || ACTIVITY_STYLES.default;
 
-                    return (
-                      <div
-                        key={idx}
-                        className="flex flex-col gap-2 py-3.5 sm:flex-row sm:items-center sm:justify-between"
-                      >
-                        <div className="flex items-start gap-3">
-                          <div
-                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm ${
-                              isStamp
-                                ? "bg-red-100 text-[#A51D27]"
-                                : isVoucherIssue
-                                ? "bg-amber-100 text-amber-800"
-                                : "bg-emerald-100 text-emerald-800"
-                            }`}
+                        const subDetails = [
+                          act.program_name,
+                          act.voucher_code && `Code: ${act.voucher_code}`,
+                          act.redeemed_by && `By ${act.redeemed_by}`,
+                        ].filter(Boolean);
+
+                        return (
+                          <li
+                            key={
+                              act.id ?? `${act.type}-${act.occurred_at}-${idx}`
+                            }
+                            className="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-0"
                           >
-                            <FontAwesomeIcon
-                              icon={
-                                isStamp
-                                  ? faStamp
-                                  : isVoucherIssue
-                                  ? faTicket
-                                  : faCheckCircle
-                              }
-                            />
-                          </div>
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium text-[#23140C]">
+                                {act.description}
+                              </p>
 
-                          <div>
-                            <p className="text-[14px] font-bold text-[#23140C]">
-                              {act.description}
-                            </p>
-                            <p className="text-[12.5px] text-[#23140C]/60">
-                              {act.program_name && (
-                                <span>Program: {act.program_name} • </span>
+                              {subDetails.length > 0 && (
+                                <p className="mt-1 truncate text-xs text-[#23140C]/50">
+                                  {subDetails.join(" · ")}
+                                </p>
                               )}
-                              {act.voucher_code && (
-                                <span className="font-mono text-[#A51D27] font-semibold">
-                                  Code: {act.voucher_code} •{" "}
+                            </div>
+
+                            <div className="shrink-0 text-right">
+                              {act.type === "stamp_earned" ? (
+                                <span className="text-sm font-bold text-[#A51D27]">
+                                  +{act.stamps_awarded}
+                                </span>
+                              ) : (
+                                <span className="text-xs font-medium text-[#23140C]/60">
+                                  {style.label}
                                 </span>
                               )}
-                              {act.redeemed_by && (
-                                <span>Redeemed by {act.redeemed_by} • </span>
-                              )}
-                              <span>{formatDate(act.occurred_at)}</span>
-                            </p>
-                          </div>
-                        </div>
 
-                        <div>
-                          <span
-                            className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${
-                              isStamp
-                                ? "bg-red-50 text-[#A51D27] border border-red-200"
-                                : isVoucherIssue
-                                ? "bg-amber-50 text-amber-800 border border-amber-200"
-                                : "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                            }`}
-                          >
-                            {isStamp
-                              ? `+${act.stamps_awarded} Stamp`
-                              : isVoucherIssue
-                              ? "Voucher Issued"
-                              : "Redeemed"}
-                          </span>
-                        </div>
+                              <p className="mt-1 text-[11px] text-[#23140C]/45">
+                                {formatDate(act.occurred_at)}
+                              </p>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+
+                    {/* View More */}
+                    {filteredActivities.length > visibleActivityCount && (
+                      <div className="mt-5 flex w-full justify-end">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="xs"
+                          onClick={() =>
+                            setVisibleActivityCount((prev) => prev + 5)
+                          }
+                          className="!bg-[#F4F0EA] !text-[#A51D27] hover:!bg-[#EDE5DC]"
+                        >
+                          View more
+                        </Button>
                       </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="mt-5 text-[13.5px] italic text-[#23140C]/60 py-4 text-center">
-                  No activity recorded for this customer yet.
-                </p>
-              )}
-            </section>
-          </div>
-        )}
+                    )}
+                  </>
+                ) : (
+                  <p className="py-5 text-center text-sm text-[#23140C]/55">
+                    {activities.length > 0
+                      ? "No matching activity found."
+                      : "No activity yet."}
+                  </p>
+                )}
+              </Card>
+            </div>
+          )}
 
-        {/* Award Stamps Modal */}
-        {customer && (
-          <AwardStampsModal
-            isOpen={isAwardModalOpen}
-            customer={customer}
-            initialCardId={awardingCardId}
-            onClose={() => setIsAwardModalOpen(false)}
-            onSuccess={handleAwardSuccess}
-          />
-        )}
+          {/* Award Stamps Modal */}
+          {customer && (
+            <AwardStampsModal
+              isOpen={isAwardModalOpen}
+              customer={customer}
+              initialCardId={awardingCardId}
+              onClose={() => setIsAwardModalOpen(false)}
+              onSuccess={reload}
+            />
+          )}
+        </div>
       </main>
     </div>
   );

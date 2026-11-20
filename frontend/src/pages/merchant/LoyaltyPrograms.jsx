@@ -8,7 +8,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { MerchantSidebar } from "../../components/merchant/MerchantSidebar";
 import { LoyaltyProgramCard } from "../../components/merchant/rewards/LoyaltyProgramCard";
-import { EmptyState, ErrorState, Spinner, Button } from "../../components/ui";
+import { EmptyState, ErrorState, Button } from "../../components/ui";
 import { loyaltyProgramService } from "../../services/loyaltyProgramService";
 
 const STATUS_TABS = [
@@ -42,8 +42,32 @@ export const LoyaltyPrograms = () => {
   }, []);
 
   useEffect(() => {
-    loadPrograms();
-  }, [loadPrograms]);
+    let ignore = false;
+    loyaltyProgramService
+      .getAllPrograms()
+      .then((res) => {
+        if (!ignore) {
+          setPrograms(res.data || []);
+          setError(null);
+        }
+      })
+      .catch((err) => {
+        if (!ignore) {
+          console.error("Failed to fetch loyalty programs:", err);
+          setError(
+            err.response?.data?.message ||
+              "Unable to load your loyalty programs. Please check your connection and try again.",
+          );
+        }
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   // Normalize status once so filtering is consistent.
   const getStatus = (program) => program.status?.toLowerCase();
@@ -77,7 +101,7 @@ export const LoyaltyPrograms = () => {
 
         {/* Status Filter Tabs */}
         {!loading && !error && programs.length > 0 && (
-          <div className="mt-6 flex flex-wrap gap-1.5  pb-4">
+          <div className="mt-6 flex flex-wrap gap-2 pb-4">
             {STATUS_TABS.map((tab) => {
               const isSelected = statusFilter === tab.id;
 

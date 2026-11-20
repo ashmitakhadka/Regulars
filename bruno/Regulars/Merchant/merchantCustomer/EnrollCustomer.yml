@@ -10,7 +10,7 @@ http:
     type: json
     data: |-
       {
-          "loyalty_program_id": 6,
+          "loyalty_program_id": 10,
           "identifier_type": "customer_code",
           "identifier": "RG-TEST002"
       }

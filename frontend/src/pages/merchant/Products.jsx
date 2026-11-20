@@ -13,7 +13,14 @@ import {
 import { MerchantSidebar } from "../../components/merchant/MerchantSidebar";
 import { ProductFormModal } from "../../components/merchant/products/ProductFormModal";
 import { DeleteProductModal } from "../../components/merchant/products/DeleteProductModal";
-import { Button, EmptyState, ErrorState, Spinner } from "../../components/ui";
+import {
+  Button,
+  EmptyState,
+  ErrorState,
+  Spinner,
+  Card,
+  Tag,
+} from "../../components/ui";
 import { productService } from "../../services/productService";
 
 const formatPrice = (price) =>
@@ -86,13 +93,6 @@ export const Products = () => {
       ignore = true;
     };
   }, []);
-
-  // Product counts
-  const counts = {
-    all: products.length,
-    active: products.filter((p) => p.status === "active").length,
-    inactive: products.filter((p) => p.status === "inactive").length,
-  };
 
   // Search and filter
   const filteredProducts = products.filter((product) => {
@@ -193,9 +193,9 @@ export const Products = () => {
   };
 
   const filters = [
-    { id: "all", label: "All", count: counts.all },
-    { id: "active", label: "Active", count: counts.active },
-    { id: "inactive", label: "Inactive", count: counts.inactive },
+    { id: "all", label: "All" },
+    { id: "active", label: "Active" },
+    { id: "inactive", label: "Inactive" },
   ];
 
   return (
@@ -242,27 +242,15 @@ export const Products = () => {
                   const selected = statusFilter === filter.id;
 
                   return (
-                    <button
+                    <Button
                       key={filter.id}
                       type="button"
+                      size="sm"
+                      variant={selected ? "primary" : "outline"}
                       onClick={() => setStatusFilter(filter.id)}
-                      className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-[13px] font-semibold border transition cursor-pointer ${
-                        selected
-                          ? "border-[#A51D27] bg-[#A51D27]/10 text-[#A51D27]"
-                          : "border-[#F4F0EA] bg-[#F4F0EA] text-[#23140C] hover:border-[#A51D27]/40"
-                      }`}
                     >
-                      <span>{filter.label}</span>
-                      <span
-                        className={`rounded-full px-2 py-0.2 text-[11px] font-bold ${
-                          selected
-                            ? "bg-[#A51D27] text-white"
-                            : "bg-white text-[#23140C]/80"
-                        }`}
-                      >
-                        {filter.count}
-                      </span>
-                    </button>
+                      {filter.label} ({filter.count})
+                    </Button>
                   );
                 })}
               </div>
@@ -335,7 +323,7 @@ export const Products = () => {
 
             {!loading && !error && filteredProducts.length > 0 && (
               <>
-                <div className="mb-4 flex items-center justify-between">
+                <div className="mb-4 flex items-center justify-between  pl-3">
                   <p className="text-sm font-medium text-[#23140C]/60">
                     {filteredProducts.length}{" "}
                     {filteredProducts.length === 1 ? "product" : "products"}
@@ -344,65 +332,55 @@ export const Products = () => {
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {filteredProducts.map((product) => {
-                    const isActive = product.status === "active";
-
                     return (
-                      <article
+                      <Card
                         key={product.id}
-                        className="flex flex-col rounded-xl bg-white p-5 shadow-[0_2px_12px_rgba(35,20,12,0.06)] transition hover:shadow-[0_4px_18px_rgba(35,20,12,0.10)]"
+                        padding="p-5"
+                        className="flex flex-col"
                       >
                         <div className="flex items-start justify-between gap-3">
-                          <div className="flex min-w-0 items-center gap-3">
-                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F4F0EA] text-[#23140C]">
-                              <FontAwesomeIcon icon={faBox} />
-                            </div>
-
-                            <div className="min-w-0">
-                              <h3 className="truncate font-semibold text-[#23140C]">
-                                {product.name}
-                              </h3>
-
-                              <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-[#A51D27]">
-                                {formatPrice(product.price)}
-                              </p>
-                            </div>
-                          </div>
-
-                          <span
-                            className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${
-                              isActive
-                                ? "bg-emerald-50 text-emerald-700"
-                                : "bg-[#F4F0EA] text-[#23140C]/60"
-                            }`}
-                          >
-                            {product.status || "active"}
+                          <h3 className="min-w-0 truncate font-semibold text-ink">
+                            {product.name}
+                          </h3>
+                          <span className="shrink-0 text-sm font-semibold text-brand-900">
+                            {formatPrice(product.price)}
                           </span>
                         </div>
 
-                        <p className="mt-2 min-h-10 text-sm leading-relaxed text-[#23140C]/60 line-clamp-2">
+                        <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-ink-soft">
                           {product.description || "No description provided."}
                         </p>
 
-                        <div className="mt-1 flex items-center justify-end gap-1">
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(product)}
-                            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-[#23140C]/70 transition hover:bg-[#F4F0EA] hover:text-[#23140C]"
-                          >
-                            <FontAwesomeIcon icon={faPen} />
-                            Edit
-                          </button>
+                        <div className="mt-1.5 flex items-center justify-between  pt-3">
+                          {product.status === "inactive" ? (
+                            <Tag variant="cream">Inactive</Tag>
+                          ) : (
+                            <span />
+                          )}
 
-                          <button
-                            type="button"
-                            onClick={() => setDeletingProduct(product)}
-                            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50"
-                          >
-                            <FontAwesomeIcon icon={faTrash} />
-                            Delete
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              type="button"
+                              size="xs"
+                              variant="ghost"
+                              onClick={() => openEditModal(product)}
+                            >
+                              <FontAwesomeIcon icon={faPen} />
+                              Edit
+                            </Button>
+                            <Button
+                              type="button"
+                              size="xs"
+                              variant="ghost"
+                              className="text-red-600 hover:bg-red-50"
+                              onClick={() => setDeletingProduct(product)}
+                            >
+                              <FontAwesomeIcon icon={faTrash} />
+                              Delete
+                            </Button>
+                          </div>
                         </div>
-                      </article>
+                      </Card>
                     );
                   })}
                 </div>

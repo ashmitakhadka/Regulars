@@ -5,12 +5,7 @@ import {
   faUsers,
   faUserPlus,
   faSearch,
-  faRotateRight,
-  faStamp,
-  faArrowRight,
   faFire,
-  faIdCard,
-  faPhone,
 } from "@fortawesome/free-solid-svg-icons";
 import { MerchantSidebar } from "../../components/merchant/MerchantSidebar";
 import { EnrollCustomerModal } from "../../components/merchant/customers/EnrollCustomerModal";
@@ -18,127 +13,94 @@ import { AwardStampsModal } from "../../components/merchant/customers/AwardStamp
 import { Button, EmptyState, ErrorState, Spinner } from "../../components/ui";
 import { customerService } from "../../services/customerService";
 
+const LOAD_ERROR =
+  "Unable to load customer records. Please check your connection.";
+
 export const Customers = () => {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
-  // Modals
   const [isEnrollOpen, setIsEnrollOpen] = useState(false);
   const [awardingCustomer, setAwardingCustomer] = useState(null);
 
-  const loadCustomers = async () => {
+  const query = searchQuery.trim();
+
+  const reload = () => {
     setLoading(true);
-    setError(null);
-    try {
-      const response = await customerService.getCustomers({
-        search: searchQuery.trim() || undefined,
-      });
-      setCustomers(response.data || []);
-    } catch (err) {
-      console.error("Failed to load customers:", err);
-      setError(
-        err.response?.data?.message ||
-          "Unable to load customer records. Please check your connection.",
-      );
-    } finally {
-      setLoading(false);
-    }
+    setReloadKey((k) => k + 1);
   };
 
   useEffect(() => {
     let ignore = false;
 
     customerService
-      .getCustomers({ search: searchQuery.trim() || undefined })
+      .getCustomers({ search: query || undefined })
       .then((res) => {
-        if (!ignore) {
-          setCustomers(res.data || []);
-          setError(null);
-        }
+        if (ignore) return;
+        setCustomers(res.data || []);
+        setError(null);
       })
       .catch((err) => {
-        if (!ignore) {
-          console.error("Failed to load customers:", err);
-          setError(
-            err.response?.data?.message ||
-              "Unable to load customer records. Please check your connection.",
-          );
-        }
+        if (ignore) return;
+        console.error("Failed to load customers:", err);
+        setError(err.response?.data?.message || LOAD_ERROR);
       })
-      .finally(() => {
-        if (!ignore) setLoading(false);
-      });
+      .finally(() => !ignore && setLoading(false));
 
     return () => {
       ignore = true;
     };
-  }, [searchQuery]);
+  }, [query, reloadKey]);
 
-  const handleEnrolled = () => {
-    loadCustomers();
-  };
+  const hasPrograms = (c) => c.programs?.length > 0;
 
-  const handleAwardSuccess = () => {
-    loadCustomers();
-  };
+  const AwardButton = ({ customer, label = "Award" }) =>
+    hasPrograms(customer) && (
+      <Button
+        variant="primary"
+        size="xs"
+        onClick={() => setAwardingCustomer(customer)}
+        title="Award stamps to customer"
+      >
+        <span>{label}</span>
+      </Button>
+    );
 
+  const DetailsButton = ({ customer }) => (
+    <Button
+      to={`/merchant/customers/${customer.id}`}
+      variant="secondary"
+      size="xs"
+    >
+      Details
+    </Button>
+  );
   return (
     <div className="flex min-h-screen flex-col bg-white md:flex-row">
-      {/* Merchant Sidebar */}
       <MerchantSidebar />
 
-      {/* Main Content Area */}
       <main className="w-full flex-1 p-5 sm:p-8">
         {/* Header */}
-        <header className="flex flex-col gap-4 border-b border-[#F4F0EA] pb-6 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[13px] font-semibold uppercase tracking-wider text-[#23140C]/60">
-                Merchant Portal
-              </span>
-              <span className="text-[#23140C]/30">•</span>
-              <span className="text-[13px] font-semibold text-[#A51D27]">
-                Customer Management
-              </span>
-            </div>
-            <h1 className="mt-1 font-display text-[26px] sm:text-[28px] font-bold tracking-tight text-[#23140C]">
-              Customers
-            </h1>
-            <p className="mt-1 text-[13.5px] sm:text-[14px] text-[#23140C]/75">
-              View customer loyalty progress, streaks, and award visit, purchase or product stamps.
-            </p>
-          </div>
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="font-display text-[26px] font-bold tracking-tight text-[#23140C] sm:text-[28px]">
+            Customers
+          </h1>
 
-          <div className="flex items-center gap-3">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={loadCustomers}
-              disabled={loading}
-              title="Refresh customers"
-            >
-              <FontAwesomeIcon
-                icon={faRotateRight}
-                className={loading ? "animate-spin" : ""}
-              />
-              <span className="hidden sm:inline">Refresh</span>
-            </Button>
-
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => setIsEnrollOpen(true)}
-            >
-              <FontAwesomeIcon icon={faUserPlus} />
-              <span>Enroll Customer</span>
-            </Button>
-          </div>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setIsEnrollOpen(true)}
+          >
+            <FontAwesomeIcon icon={faUserPlus} />
+            <span>Enroll </span>
+          </Button>
         </header>
 
-        {/* Search Bar */}
-        <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-[#F4F0EA] pb-5">
+        {/* Search */}
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full max-w-md">
             <FontAwesomeIcon
               icon={faSearch}
@@ -146,193 +108,167 @@ export const Customers = () => {
             />
             <input
               type="text"
-              placeholder="Search by name, customer code (e.g. RG-TEST), or phone..."
+              placeholder="Search by name, code or phone"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border border-[#F4F0EA] bg-white pl-10 pr-4 py-2 text-[14px] text-[#23140C] placeholder:text-[#23140C]/40 transition focus:border-[#A51D27] focus:outline-none focus:ring-2 focus:ring-[#A51D27]/20"
+              className="w-full rounded-lg border border-[#F4F0EA] bg-white py-2 pl-10 pr-4 text-sm text-[#23140C] placeholder:text-[#23140C]/40 transition focus:border-[#23140C]/40 focus:outline-none focus:ring-2 focus:ring-[#23140C]/10"
             />
           </div>
 
-          <p className="text-[13.5px] text-[#23140C]/75 font-semibold">
-            {customers.length} Enrolled Customer(s)
+          <p className="text-sm text-[#23140C]/60">
+            {customers.length}{" "}
+            {customers.length === 1 ? "customer" : "customers"}
           </p>
         </div>
 
-        {/* Content States */}
-        <section className="mt-8" aria-label="Customers directory">
-          {/* 1. Loading State */}
+        <section className="mt-6" aria-label="Customers directory">
           {loading && (
-            <div className="flex min-h-[300px] flex-col items-center justify-center gap-3 rounded-2xl bg-[#F4F0EA]/40 p-8">
+            <div className="flex min-h-[300px] flex-col items-center justify-center gap-3">
               <Spinner size="md" />
-              <p className="text-[14px] font-medium text-[#23140C]/75">
-                Loading your customers...
-              </p>
+              <p className="text-sm text-[#23140C]/60">Loading customers…</p>
             </div>
           )}
 
-          {/* 2. Error State */}
           {!loading && error && (
-            <div className="rounded-2xl border border-red-100 bg-red-50/40 p-6">
+            <div className="rounded-xl bg-red-50/40 p-6">
               <ErrorState
-                title="Could not load customers"
+                title="Couldn't load customers"
                 message={error}
-                onRetry={loadCustomers}
+                onRetry={reload}
               />
             </div>
           )}
 
-          {/* 3. Empty State (Zero Customers) */}
-          {!loading && !error && customers.length === 0 && !searchQuery.trim() && (
-            <div className="rounded-2xl bg-[#F4F0EA]/40 p-8">
+          {!loading && !error && customers.length === 0 && !query && (
+            <div className="rounded-xl bg-[#F4F0EA]/40 p-8">
               <EmptyState
                 icon={faUsers}
-                title="No customers enrolled yet"
-                description="Customers will appear here when they join via your QR code, or you can manually enroll an existing customer."
+                title="No customers yet"
+                description="Customers appear here when they join with your QR code, or you can enroll one yourself."
                 action={
                   <Button
                     variant="primary"
-                    size="md"
+                    size="sm"
                     onClick={() => setIsEnrollOpen(true)}
                   >
                     <FontAwesomeIcon icon={faUserPlus} />
-                    <span>Enroll First Customer</span>
+                    <span>Enroll customer</span>
                   </Button>
                 }
               />
             </div>
           )}
 
-          {/* 4. Empty Search State */}
-          {!loading && !error && customers.length === 0 && searchQuery.trim() && (
-            <div className="rounded-2xl bg-[#F4F0EA]/30 p-8">
+          {!loading && !error && customers.length === 0 && query && (
+            <div className="rounded-xl bg-[#F4F0EA]/30 p-8">
               <EmptyState
                 icon={faSearch}
-                title="No customers match your search"
-                description={`No customers found for "${searchQuery}". Check the code or phone number.`}
+                title="No matching customers"
+                description={`Nothing found for "${query}". Check the code or phone number.`}
                 action={
                   <Button
                     variant="secondary"
                     size="sm"
                     onClick={() => setSearchQuery("")}
                   >
-                    Clear Search
+                    Clear search
                   </Button>
                 }
               />
             </div>
           )}
 
-          {/* 5. Customers List (Table on sm+, Cards on mobile) */}
           {!loading && !error && customers.length > 0 && (
-            <div className="overflow-hidden rounded-2xl bg-white shadow-[0_2px_12px_rgba(35,20,12,0.06)]">
-              {/* Desktop Table View */}
-              <div className="hidden sm:block overflow-x-auto">
-                <table className="w-full text-left text-[14px]">
-                  <thead className="border-b border-[#F4F0EA] bg-[#F4F0EA]/60 text-[13px] font-bold uppercase tracking-wider text-[#23140C]/70">
+            <div className="overflow-hidden rounded-xl bg-white shadow-[0_2px_12px_rgba(35,20,12,0.06)]">
+              {/* Desktop table */}
+              <div className="hidden overflow-x-auto sm:block">
+                <table className="w-full text-left text-sm">
+                  <thead className="text-sm font-semibold text-[#23140C]">
                     <tr>
-                      <th className="py-3.5 px-6">Customer</th>
-                      <th className="py-3.5 px-6">Contact</th>
-                      <th className="py-3.5 px-6">Enrolled Programs</th>
-                      <th className="py-3.5 px-6">Streak</th>
-                      <th className="py-3.5 px-6 text-right">Actions</th>
+                      <th className="px-5 py-3">Customer</th>
+                      <th className="px-5 py-3">Contact</th>
+                      <th className="px-5 py-3">Programs</th>
+                      <th className="px-5 py-3">Streak</th>
+                      <th className="px-5 py-3 text-right">Actions</th>
                     </tr>
                   </thead>
+
                   <tbody className="divide-y divide-[#F4F0EA]">
                     {customers.map((c) => (
                       <tr
                         key={c.id}
-                        className="hover:bg-[#F4F0EA]/25 transition-colors"
+                        className="transition-colors hover:bg-[#F4F0EA]/25"
                       >
-                        {/* Name & Code */}
-                        <td className="py-4 px-6">
-                          <div className="font-bold text-[#23140C] text-[15px]">
-                            <Link
-                              to={`/merchant/customers/${c.id}`}
-                              className="hover:text-[#A51D27] transition"
-                            >
-                              {c.name}
-                            </Link>
-                          </div>
-                          <span className="mt-0.5 inline-flex items-center gap-1 font-mono text-[12px] text-[#A51D27] font-semibold">
-                            <FontAwesomeIcon icon={faIdCard} className="text-xs" />
+                        <td className="px-5 py-3.5">
+                          <Link
+                            to={`/merchant/customers/${c.id}`}
+                            className="font-semibold text-xs text-[#23140C] hover:underline"
+                          >
+                            {c.name}
+                          </Link>
+                          <p className="font-mono text-xs text-[#23140C]/60">
                             {c.customer_code}
-                          </span>
+                          </p>
                         </td>
 
-                        {/* Contact */}
-                        <td className="py-4 px-6 text-[13.5px] text-[#23140C]/80">
-                          {c.phone ? (
-                            <p className="flex items-center gap-1.5 font-medium">
-                              <FontAwesomeIcon
-                                icon={faPhone}
-                                className="text-xs text-[#23140C]/50"
-                              />
-                              <span>{c.phone}</span>
-                            </p>
-                          ) : (
-                            <p className="italic text-[#23140C]/50">No phone</p>
-                          )}
-                          <p className="text-[12.5px] text-[#23140C]/60 truncate max-w-[180px]">
+                        <td className="px-5 py-3.5 text-[#23140C]/80">
+                          <p>
+                            {c.phone || (
+                              <span className="text-[#23140C]/40">
+                                No phone
+                              </span>
+                            )}
+                          </p>
+                          <p className="max-w-[180px] truncate text-xs text-[#23140C]/60">
                             {c.email}
                           </p>
                         </td>
 
-                        {/* Enrolled Programs */}
-                        <td className="py-4 px-6">
-                          {c.programs && c.programs.length > 0 ? (
-                            <div className="flex flex-wrap gap-1.5 max-w-xs">
-                              {c.programs.map((p) => (
+                        <td className="px-5 py-3.5">
+                          {hasPrograms(c) ? (
+                            <div className="flex max-w-xs flex-wrap items-center gap-1.5">
+                              {c.programs.slice(0, 2).map((p) => (
                                 <span
                                   key={p.stamp_card_id}
-                                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#F4F0EA] px-2.5 py-1 text-[12.5px] font-semibold text-[#23140C]"
+                                  className="max-w-[120px] truncate rounded-md  px-2 py-0.5 text-xs font-medium text-[#23140C]/80"
                                 >
-                                  <span>{p.program_name}</span>
-                                  <span className="rounded-full bg-[#A51D27] text-white px-1.5 py-0.2 text-[10px] font-bold">
-                                    {p.stamps_earned} ⭐️
-                                  </span>
+                                  {p.program_name}
                                 </span>
                               ))}
+
+                              {c.programs.length > 2 && (
+                                <span
+                                  title={c.programs
+                                    .slice(2)
+                                    .map((p) => p.program_name)
+                                    .join(", ")}
+                                  className="text-xs font-medium text-[#23140C]/60"
+                                >
+                                  +{c.programs.length - 2} more
+                                </span>
+                              )}
                             </div>
                           ) : (
-                            <span className="text-[13px] italic text-[#23140C]/50">
+                            <span className="text-[#23140C]/40">
                               No active cards
                             </span>
                           )}
                         </td>
 
-                        {/* Streak */}
-                        <td className="py-4 px-6">
-                          <div className="inline-flex items-center gap-1.5 font-bold text-[#A51D27] text-[13.5px]">
-                            <FontAwesomeIcon icon={faFire} />
-                            <span>{c.current_streak || 0} visits</span>
-                          </div>
-                          <p className="text-[12px] text-[#23140C]/60">
-                            Longest: {c.longest_streak || 0}
-                          </p>
+                        <td className="px-5 py-3.5">
+                          <span className="inline-flex items-center gap-1.5 text-[#23140C]/80">
+                            <FontAwesomeIcon
+                              icon={faFire}
+                              className="text-[#A51D27]"
+                            />
+                            {c.current_streak || 0} visits
+                          </span>
                         </td>
 
-                        {/* Action Buttons */}
-                        <td className="py-4 px-6 text-right">
+                        <td className="px-5 py-3.5">
                           <div className="flex items-center justify-end gap-2">
-                            {c.programs && c.programs.length > 0 && (
-                              <Button
-                                variant="primary"
-                                size="sm"
-                                onClick={() => setAwardingCustomer(c)}
-                                title="Award stamps to customer"
-                              >
-                                <FontAwesomeIcon icon={faStamp} />
-                                <span>Award</span>
-                              </Button>
-                            )}
-
-                            <Link
-                              to={`/merchant/customers/${c.id}`}
-                              className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[13px] font-semibold text-[#23140C]/75 hover:bg-[#F4F0EA] hover:text-[#23140C] transition"
-                            >
-                              <span>Details</span>
-                              <FontAwesomeIcon icon={faArrowRight} className="text-xs" />
-                            </Link>
+                            <AwardButton customer={c} />
+                            <DetailsButton customer={c} />
                           </div>
                         </td>
                       </tr>
@@ -341,62 +277,48 @@ export const Customers = () => {
                 </table>
               </div>
 
-              {/* Mobile Card View */}
-              <div className="sm:hidden divide-y divide-[#F4F0EA]">
+              {/* Mobile cards */}
+              <div className="divide-y divide-[#F4F0EA] sm:hidden">
                 {customers.map((c) => (
-                  <div key={c.id} className="p-4 space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div>
+                  <div key={c.id} className="space-y-3 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
                         <Link
                           to={`/merchant/customers/${c.id}`}
-                          className="font-bold text-[#23140C] text-[15px]"
+                          className="font-semibold text-[#23140C]"
                         >
                           {c.name}
                         </Link>
-                        <p className="font-mono text-xs text-[#A51D27] font-semibold">
+                        <p className="font-mono text-xs text-[#23140C]/60">
                           {c.customer_code}
                         </p>
                       </div>
 
-                      <div className="text-right">
-                        <span className="inline-flex items-center gap-1 font-bold text-[#A51D27] text-[13px]">
-                          <FontAwesomeIcon icon={faFire} />
-                          <span>{c.current_streak || 0} visits</span>
-                        </span>
-                      </div>
+                      <span className="inline-flex shrink-0 items-center gap-1.5 text-xs text-[#23140C]/80">
+                        <FontAwesomeIcon
+                          icon={faFire}
+                          className="text-[#A51D27]"
+                        />
+                        {c.current_streak || 0} visits
+                      </span>
                     </div>
 
-                    {c.programs && c.programs.length > 0 && (
+                    {hasPrograms(c) && (
                       <div className="flex flex-wrap gap-1.5">
                         {c.programs.map((p) => (
                           <span
                             key={p.stamp_card_id}
-                            className="rounded-lg bg-[#F4F0EA] px-2 py-0.5 text-xs font-semibold text-[#23140C]"
+                            className="rounded-md px-2 py-0.5 text-xs font-medium text-[#23140C]"
                           >
-                            {p.program_name}: <strong>{p.stamps_earned}★</strong>
+                            {p.program_name}: {p.stamps_earned}
                           </span>
                         ))}
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between border-t border-[#F4F0EA] pt-2.5">
-                      <Link
-                        to={`/merchant/customers/${c.id}`}
-                        className="text-xs font-semibold text-[#23140C]/70 hover:underline"
-                      >
-                        View Activity
-                      </Link>
-
-                      {c.programs && c.programs.length > 0 && (
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => setAwardingCustomer(c)}
-                        >
-                          <FontAwesomeIcon icon={faStamp} />
-                          <span>Award Stamps</span>
-                        </Button>
-                      )}
+                    <div className="flex items-center justify-between gap-2 border-t border-[#F4F0EA] pt-3">
+                      <DetailsButton customer={c} />
+                      <AwardButton customer={c} />
                     </div>
                   </div>
                 ))}
@@ -405,19 +327,17 @@ export const Customers = () => {
           )}
         </section>
 
-        {/* Enroll Customer Modal */}
         <EnrollCustomerModal
           isOpen={isEnrollOpen}
           onClose={() => setIsEnrollOpen(false)}
-          onEnrolled={handleEnrolled}
+          onEnrolled={reload}
         />
 
-        {/* Award Stamps Modal */}
         <AwardStampsModal
           isOpen={Boolean(awardingCustomer)}
           customer={awardingCustomer}
           onClose={() => setAwardingCustomer(null)}
-          onSuccess={handleAwardSuccess}
+          onSuccess={reload}
         />
       </main>
     </div>
@@ -425,4 +345,3 @@ export const Customers = () => {
 };
 
 export default Customers;
-

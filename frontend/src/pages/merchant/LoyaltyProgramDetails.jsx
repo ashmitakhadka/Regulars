@@ -43,8 +43,36 @@ export const LoyaltyProgramDetails = () => {
   }, [id]);
 
   useEffect(() => {
-    loadProgram();
-  }, [loadProgram]);
+    let ignore = false;
+    if (!id) return;
+
+    loyaltyProgramService
+      .getProgramDetails(id)
+      .then((res) => {
+        if (!ignore) {
+          setProgram(res.data);
+          setError(null);
+        }
+      })
+      .catch((err) => {
+        if (!ignore) {
+          console.error("Failed to fetch program details:", err);
+          setError(
+            err.response?.status === 404
+              ? "Loyalty program not found. It may have been archived or does not exist."
+              : err.response?.data?.message ||
+                  "Unable to load loyalty program details. Please try again.",
+          );
+        }
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [id]);
 
   const isArchived = program?.status === "archived";
   const isActive = program?.status === "active";

@@ -13,6 +13,7 @@ class Voucher extends Model
         'customer_id',
         'stamp_card_id',
         'reward_id',
+        'stamp_transaction_id',
         'code',
         'source_type',
         'reward_title',
@@ -54,6 +55,11 @@ class Voucher extends Model
     public function reward(): BelongsTo
     {
         return $this->belongsTo(Reward::class);
+    }
+
+    public function stampTransaction(): BelongsTo
+    {
+        return $this->belongsTo(StampTransaction::class);
     }
 
     public function redemption(): HasOne
