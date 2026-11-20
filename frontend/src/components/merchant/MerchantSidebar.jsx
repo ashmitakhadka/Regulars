@@ -16,6 +16,7 @@ import {
   faBars,
   faXmark,
   faSpinner,
+  faBoxesStacked,
 } from "@fortawesome/free-solid-svg-icons";
 
 import { Logo } from "../ui";
@@ -23,6 +24,7 @@ import { Logo } from "../ui";
 const navigationItems = [
   { label: "Dashboard", path: "/merchant/dashboard", icon: faGauge },
   { label: "Loyalty Programs", path: "/merchant/loyalty-programs", icon: faGift },
+  { label: "Products", path: "/merchant/products", icon: faBoxesStacked },
   { label: "Customers", path: "/merchant/customers", icon: faUsers },
   { label: "QR Code", path: "/merchant/qr-code", icon: faQrcode },
   { label: "Vouchers", path: "/merchant/vouchers", icon: faTicket },

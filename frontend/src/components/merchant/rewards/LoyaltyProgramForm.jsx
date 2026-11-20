@@ -1,79 +1,195 @@
+import { forwardRef, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+
 import {
-  faStar,
-  faGift,
-  faTag,
-  faCheck,
-  faInfoCircle,
+  faPlus,
+  faTrash,
+  faBox,
+  faChevronDown,
 } from "@fortawesome/free-solid-svg-icons";
-import { Button } from "../../ui";
 
-// Validation Schema matching Laravel backend rules exactly
-const loyaltyProgramSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(1, "Loyalty program name is required.")
-    .max(255, "Loyalty program name cannot exceed 255 characters."),
-  description: z
-    .string()
-    .trim()
-    .max(1000, "Description cannot exceed 1000 characters.")
-    .optional()
-    .or(z.literal("")),
+import { Button, Input, Spinner, EmptyState } from "../../ui";
+import { productService } from "../../../services/productService";
+import { loyaltyProgramSchema } from "../../../schema/loyaltyProgramSchema";
 
-  earning_type: z.enum(["visit", "purchase", "quantity"], {
-    errorMap: () => ({ message: "Please select an earning type." }),
-  }),
-  threshold: z.coerce
-    .number({ invalid_type_error: "Threshold must be a valid number." })
-    .positive("Threshold must be greater than 0."),
-  stamps_awarded: z.coerce
-    .number({ invalid_type_error: "Stamps awarded must be a whole number." })
-    .int("Stamps awarded must be an integer.")
-    .min(1, "At least 1 stamp must be awarded."),
-  daily_stamp_limit: z.preprocess(
-    (val) => (val === "" || val === null || val === undefined ? null : val),
-    z.coerce
-      .number({ invalid_type_error: "Daily stamp limit must be a number." })
-      .int("Daily limit must be a whole number.")
-      .min(1, "Daily limit must be at least 1.")
-      .nullable()
-      .optional(),
-  ),
+/* ---------- helpers ---------- */
 
-  reward_title: z
-    .string()
-    .trim()
-    .min(1, "Reward title is required.")
-    .max(255, "Reward title cannot exceed 255 characters."),
-  reward_description: z
-    .string()
-    .trim()
-    .max(1000, "Reward description cannot exceed 1000 characters.")
-    .optional()
-    .or(z.literal("")),
-  reward_type: z
-    .string()
-    .trim()
-    .min(1, "Reward type is required.")
-    .max(50, "Reward type cannot exceed 50 characters."),
-  reward_value: z.preprocess(
-    (val) => (val === "" || val === null || val === undefined ? null : val),
-    z.coerce
-      .number({ invalid_type_error: "Reward value must be a number." })
-      .min(0, "Reward value cannot be negative.")
-      .nullable()
-      .optional(),
-  ),
-  voucher_validity_days: z.coerce
-    .number({ invalid_type_error: "Validity days must be a whole number." })
-    .int("Validity days must be a whole number.")
-    .min(1, "Voucher validity must be at least 1 day."),
+const num = (v) =>
+  v === "" || v === null || v === undefined ? null : Number(v);
+
+const text = (v) => (v?.trim() ? v.trim() : null);
+
+const EARNING_TYPES = [
+  {
+    value: "visit",
+    label: "Per visit",
+  },
+  {
+    value: "purchase",
+    label: "Per spend",
+  },
+  {
+    value: "quantity",
+    label: "Per product",
+  },
+];
+
+const REWARD_TYPES = [
+  { value: "free_item", label: "Free item" },
+  { value: "discount_percentage", label: "Percentage discount" },
+  { value: "discount_fixed", label: "Fixed discount (NPR)" },
+  { value: "custom", label: "Custom perk" },
+];
+
+const newTier = (min = 1000, stamps = 1) => ({
+  min_amount: min,
+  max_amount: "",
+  stamps_awarded: stamps,
 });
+
+const newRule = (product) => ({
+  product_id: product?.id ?? "",
+  quantity_required: 3,
+  reward_title: product ? `Free ${product.name}` : "",
+  reward_description: "",
+  reward_type: "free_item",
+  reward_value: "",
+  voucher_validity_days: 30,
+});
+
+/* ---------- small building blocks ---------- */
+
+const Select = forwardRef(
+  (
+    {
+      label,
+      className = "",
+      children,
+      disabled = false,
+      required = false,
+      ...props
+    },
+    ref,
+  ) => (
+    <div className={`w-full text-left ${className}`}>
+      {label && (
+        <label className="mb-1.5 block text-sm font-semibold text-ink">
+          {label}
+          {required && <span className="ml-1 text-brand-800">*</span>}
+        </label>
+      )}
+
+      <div className="relative">
+        <select
+          ref={ref}
+          disabled={disabled}
+          required={required}
+          {...props}
+          className="w-full min-h-[44px] appearance-none rounded-lg border border-blush-200 bg-white px-3.5 py-2 pr-9 text-sm text-ink transition focus:border-brand-800 focus:outline-none focus:ring-2 focus:ring-brand-800/20 disabled:cursor-not-allowed disabled:bg-blush-50 disabled:opacity-60"
+        >
+          {children}
+        </select>
+
+        <FontAwesomeIcon
+          icon={faChevronDown}
+          className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-soft text-[10px]"
+        />
+      </div>
+    </div>
+  ),
+);
+
+Select.displayName = "Select";
+
+const Section = ({ title, description, children }) => (
+  <section className="space-y-3">
+    <div className="space-y-0.5">
+      <h2 className="font-display text-base font-bold text-brand-900">
+        {title}
+      </h2>
+
+      {description && <p className="text-xs text-ink-soft">{description}</p>}
+    </div>
+
+    <div className="space-y-3">{children}</div>
+  </section>
+);
+
+/** Reward inputs shared by every earning type. */
+const RewardFields = ({ field, rewardType, disabled }) => (
+  <div className="space-y-3">
+    <div className="grid gap-3 sm:grid-cols-2">
+      <Input
+        label="Reward title"
+        placeholder="e.g. Free latte"
+        disabled={disabled}
+        {...field("reward_title")}
+      />
+
+      <Input
+        label="Notes (optional)"
+        placeholder="e.g. Dine-in only"
+        disabled={disabled}
+        {...field("reward_description")}
+      />
+    </div>
+
+    <div className="grid gap-3 sm:grid-cols-3">
+      <Select label="Type" disabled={disabled} {...field("reward_type")}>
+        {REWARD_TYPES.map((t) => (
+          <option key={t.value} value={t.value}>
+            {t.label}
+          </option>
+        ))}
+      </Select>
+
+      <Input
+        label={
+          rewardType === "discount_percentage"
+            ? "Value (%)"
+            : "Value (optional)"
+        }
+        type="number"
+        min="0"
+        step="any"
+        disabled={disabled}
+        {...field("reward_value")}
+      />
+
+      <Input
+        label="Valid for (days)"
+        type="number"
+        min="1"
+        step="1"
+        disabled={disabled}
+        {...field("voucher_validity_days")}
+      />
+    </div>
+  </div>
+);
+
+const RowHeader = ({ title, onRemove }) => (
+  <div className="flex items-center justify-between pb-1">
+    <span className="text-sm font-semibold text-ink">{title}</span>
+
+    {onRemove && (
+      <Button
+        type="button"
+        size="icon"
+        variant="ghost"
+        aria-label={`Remove ${title}`}
+        onClick={onRemove}
+      >
+        <FontAwesomeIcon icon={faTrash} />
+      </Button>
+    )}
+  </div>
+);
+
+/* ---------- form ---------- */
 
 export const LoyaltyProgramForm = ({
   initialValues = {},
@@ -81,10 +197,31 @@ export const LoyaltyProgramForm = ({
   isSubmitting = false,
   onCancel,
 }) => {
+  const [products, setProducts] = useState([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [error, setError] = useState("");
+
+  const [purchaseMode, setPurchaseMode] = useState(
+    initialValues.tiers?.length ? "tiers" : "simple",
+  );
+
+  const [tiers, setTiers] = useState(
+    initialValues.tiers?.length
+      ? initialValues.tiers
+      : [newTier(1000, 1), newTier(2000, 2), newTier(3000, 3)],
+  );
+
+  const [rules, setRules] = useState(
+    initialValues.product_rules?.length
+      ? initialValues.product_rules
+      : [newRule()],
+  );
+
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(loyaltyProgramSchema),
@@ -103,500 +240,537 @@ export const LoyaltyProgramForm = ({
     },
   });
 
-  const selectedEarningType = watch("earning_type");
-  const selectedRewardType = watch("reward_type");
-  const watchedName = watch("name");
-  const watchedRewardTitle = watch("reward_title");
-  const watchedThreshold = watch("threshold");
-  const watchedStamps = watch("stamps_awarded");
+  const earningType = watch("earning_type");
+  const rewardType = watch("reward_type");
 
-  const handleFormSubmit = (data) => {
-    // Clean up empty strings to null
-    const payload = {
-      ...data,
-      description: data.description ? data.description.trim() : null,
-      reward_description: data.reward_description
-        ? data.reward_description.trim()
-        : null,
-      daily_stamp_limit:
-        data.daily_stamp_limit === "" || data.daily_stamp_limit === null
-          ? null
-          : Number(data.daily_stamp_limit),
-      reward_value:
-        data.reward_value === "" || data.reward_value === null
-          ? null
-          : Number(data.reward_value),
+  useEffect(() => {
+    let ignore = false;
+
+    setLoadingProducts(true);
+
+    productService
+      .getProducts()
+      .then((res) => {
+        if (ignore) return;
+
+        const active = (res.data || []).filter((p) => p.status === "active");
+
+        setProducts(active);
+
+        if (active.length) {
+          setRules((prev) =>
+            prev.length && !prev[0].product_id
+              ? [{ ...prev[0], ...newRule(active[0]) }, ...prev.slice(1)]
+              : prev,
+          );
+        }
+      })
+      .catch((err) => console.error("Failed to fetch products:", err))
+      .finally(() => !ignore && setLoadingProducts(false));
+
+    return () => {
+      ignore = true;
     };
+  }, []);
+
+  /* tiers */
+
+  const addTier = () => {
+    const last = tiers[tiers.length - 1];
+
+    setTiers([
+      ...tiers,
+      newTier(
+        last?.max_amount ? Number(last.max_amount) + 1 : 1000,
+        last ? Number(last.stamps_awarded) + 1 : 1,
+      ),
+    ]);
+  };
+
+  const updateTier = (i, key, value) =>
+    setTiers((prev) =>
+      prev.map((t, idx) => (idx === i ? { ...t, [key]: value } : t)),
+    );
+
+  const removeTier = (i) =>
+    tiers.length > 1 && setTiers(tiers.filter((_, idx) => idx !== i));
+
+  /* product rules */
+
+  const addRule = () => {
+    const used = new Set(rules.map((r) => Number(r.product_id)));
+
+    setRules([
+      ...rules,
+      newRule(products.find((p) => !used.has(p.id)) || products[0]),
+    ]);
+  };
+
+  const updateRule = (i, key, value) =>
+    setRules((prev) =>
+      prev.map((r, idx) => {
+        if (idx !== i) return r;
+
+        const next = { ...r, [key]: value };
+
+        if (key === "product_id") {
+          const prod = products.find((p) => p.id === Number(value));
+
+          const isDefault =
+            !r.reward_title || r.reward_title.startsWith("Free ");
+
+          if (prod && isDefault) {
+            next.reward_title = `Free ${prod.name}`;
+          }
+        }
+
+        return next;
+      }),
+    );
+
+  const removeRule = (i) =>
+    rules.length > 1 && setRules(rules.filter((_, idx) => idx !== i));
+
+  /* submit */
+
+  const fail = (msg) => {
+    setError(msg);
+    return false;
+  };
+
+  const rewardPayload = (src) => ({
+    reward_title: src.reward_title.trim(),
+    reward_description: text(src.reward_description),
+    reward_type: src.reward_type || "free_item",
+    reward_value: num(src.reward_value),
+    voucher_validity_days: Number(src.voucher_validity_days) || 30,
+  });
+
+  const validateThreshold = (d, label) => {
+    if (!d.threshold || Number(d.threshold) <= 0)
+      return fail(`Enter a ${label} greater than 0.`);
+
+    if (!d.stamps_awarded || Number(d.stamps_awarded) < 1)
+      return fail("Stamps awarded must be at least 1.");
+
+    return true;
+  };
+
+  const submit = (d) => {
+    setError("");
+
+    const payload = {
+      name: d.name.trim(),
+      description: text(d.description),
+      earning_type: d.earning_type,
+      daily_stamp_limit: num(d.daily_stamp_limit),
+    };
+
+    if (d.earning_type !== "quantity") {
+      if (!d.reward_title?.trim()) {
+        return fail("Enter a reward title.");
+      }
+
+      Object.assign(payload, rewardPayload(d));
+    }
+
+    if (d.earning_type === "visit") {
+      if (!validateThreshold(d, "visit count")) return;
+
+      payload.threshold = Number(d.threshold);
+      payload.stamps_awarded = Number(d.stamps_awarded);
+    }
+
+    if (d.earning_type === "purchase") {
+      if (purchaseMode === "simple") {
+        if (!validateThreshold(d, "minimum spend")) return;
+
+        payload.threshold = Number(d.threshold);
+        payload.stamps_awarded = Number(d.stamps_awarded);
+      } else {
+        for (let i = 0; i < tiers.length; i++) {
+          const t = tiers[i];
+          const n = `Tier ${i + 1}`;
+
+          if (!t.min_amount || Number(t.min_amount) <= 0)
+            return fail(`${n}: minimum spend must be greater than 0.`);
+
+          if (
+            t.max_amount !== "" &&
+            t.max_amount !== null &&
+            Number(t.max_amount) <= Number(t.min_amount)
+          ) {
+            return fail(
+              `${n}: maximum spend must be greater than minimum spend.`,
+            );
+          }
+
+          if (!t.stamps_awarded || Number(t.stamps_awarded) < 1)
+            return fail(`${n}: stamps awarded must be at least 1.`);
+        }
+
+        payload.tiers = tiers.map((t) => ({
+          min_amount: Number(t.min_amount),
+          max_amount: num(t.max_amount),
+          stamps_awarded: Number(t.stamps_awarded),
+        }));
+      }
+    }
+
+    if (d.earning_type === "quantity") {
+      if (!products.length) {
+        return fail(
+          "Add a product to your catalog before creating a per-product program.",
+        );
+      }
+
+      const seen = new Set();
+
+      for (let i = 0; i < rules.length; i++) {
+        const r = rules[i];
+        const n = `Rule ${i + 1}`;
+
+        if (!r.product_id) return fail(`${n}: choose a product.`);
+
+        if (seen.has(Number(r.product_id))) {
+          return fail(`${n}: each product can only be used once.`);
+        }
+
+        seen.add(Number(r.product_id));
+
+        if (!r.quantity_required || Number(r.quantity_required) < 1)
+          return fail(`${n}: quantity must be at least 1.`);
+
+        if (!r.reward_title?.trim()) return fail(`${n}: enter a reward title.`);
+
+        if (!r.voucher_validity_days || Number(r.voucher_validity_days) < 1)
+          return fail(`${n}: validity must be at least 1 day.`);
+      }
+
+      payload.product_rules = rules.map((r) => ({
+        product_id: Number(r.product_id),
+        quantity_required: Number(r.quantity_required),
+        ...rewardPayload(r),
+      }));
+    }
+
     onSubmit(payload);
   };
 
+  const activeType = EARNING_TYPES.find((t) => t.value === earningType);
+
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-8" noValidate>
-      {/* SECTION 1: Basic Information */}
-      <section className="rounded-2xl bg-white p-6 shadow-[0_2px_12px_rgba(35,20,12,0.06)] sm:p-7">
-        <div className="flex items-center gap-3 border-b border-[#F4F0EA] pb-4">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F4F0EA] text-[#23140C]">
-            <FontAwesomeIcon icon={faTag} className="h-4 w-4" />
-          </div>
-          <div>
-            <h2 className="font-display text-[17px] font-bold text-[#23140C]">
-              1. Basic Information
-            </h2>
-            <p className="mt-0.5 text-[13.5px] leading-relaxed text-[#23140C]/80">
-              Name your loyalty program and give customers a clear idea of what it offers.
-            </p>
-          </div>
+    <form
+      onSubmit={handleSubmit(submit)}
+      className="w-full space-y-5"
+      noValidate
+    >
+      {/* Basics */}
+
+      <Section title="Basics">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Input
+            label="Program name"
+            className="sm:col-span-2"
+            placeholder="e.g. Coffee Lovers Club"
+            error={errors.name?.message}
+            disabled={isSubmitting}
+            {...register("name")}
+          />
+
+          <Input
+            label="Daily stamp limit (optional)"
+            type="number"
+            min="1"
+            step="1"
+            placeholder="No limit"
+            error={errors.daily_stamp_limit?.message}
+            disabled={isSubmitting}
+            {...register("daily_stamp_limit")}
+          />
         </div>
 
-        <div className="mt-5 space-y-5">
-          {/* Program Name */}
-          <div>
-            <label
-              htmlFor="name"
-              className="mb-1.5 block text-[14.5px] font-semibold text-[#23140C]"
-            >
-              Loyalty Program Name <span className="text-[#A51D27]">*</span>
-            </label>
-            <input
-              id="name"
-              type="text"
-              placeholder="e.g. Coffee Lovers Club, VIP Salon Rewards"
-              {...register("name")}
+        <Input
+          label="Description (optional)"
+          placeholder="What customers get for joining"
+          error={errors.description?.message}
+          disabled={isSubmitting}
+          {...register("description")}
+        />
+      </Section>
+
+      {/* Earning */}
+
+      <Section title="How customers earn stamps">
+        <div className="space-y-1">
+          <Select
+            label="Earning type"
+            value={earningType}
+            onChange={(e) =>
+              setValue("earning_type", e.target.value, {
+                shouldDirty: true,
+              })
+            }
+            disabled={isSubmitting}
+          >
+            {EARNING_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
+          </Select>
+
+          <p className="text-xs text-ink-soft">{activeType?.hint}</p>
+
+          <input type="hidden" {...register("earning_type")} />
+        </div>
+
+        {earningType === "visit" && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Input
+              label="Visits required"
+              type="number"
+              min="1"
+              step="1"
+              error={errors.threshold?.message}
               disabled={isSubmitting}
-              className={`w-full rounded-xl border bg-white px-4 py-2.5 text-[14.5px] text-[#23140C] placeholder:text-[#23140C]/45 transition focus:outline-none focus:ring-2 disabled:bg-[#F4F0EA]/50 ${
-                errors.name
-                  ? "border-red-500 focus:border-red-600 focus:ring-red-500/20"
-                  : "border-[#F4F0EA] focus:border-[#A51D27] focus:ring-[#A51D27]/20"
-              }`}
+              {...register("threshold")}
             />
-            {errors.name && (
-              <p className="mt-1 text-[13px] font-medium text-red-600">
-                {errors.name.message}
-              </p>
-            )}
-          </div>
 
-          {/* Description */}
-          <div>
-            <label
-              htmlFor="description"
-              className="mb-1.5 block text-[14.5px] font-semibold text-[#23140C]"
-            >
-              Description <span className="text-[13px] font-normal text-[#23140C]/60">(Optional)</span>
-            </label>
-            <textarea
-              id="description"
-              rows={3}
-              placeholder="Describe how customers participate and why they should join..."
-              {...register("description")}
+            <Input
+              label="Stamps per qualifying visit"
+              type="number"
+              min="1"
+              step="1"
+              error={errors.stamps_awarded?.message}
               disabled={isSubmitting}
-              className={`w-full rounded-xl border bg-white px-4 py-2.5 text-[14.5px] text-[#23140C] placeholder:text-[#23140C]/45 transition focus:outline-none focus:ring-2 disabled:bg-[#F4F0EA]/50 ${
-                errors.description
-                  ? "border-red-500 focus:border-red-600 focus:ring-red-500/20"
-                  : "border-[#F4F0EA] focus:border-[#A51D27] focus:ring-[#A51D27]/20"
-              }`}
+              {...register("stamps_awarded")}
             />
-            {errors.description && (
-              <p className="mt-1 text-[13px] font-medium text-red-600">
-                {errors.description.message}
-              </p>
-            )}
           </div>
-        </div>
-      </section>
+        )}
 
-      {/* SECTION 2: Earning Rules */}
-      <section className="rounded-2xl bg-white p-6 shadow-[0_2px_12px_rgba(35,20,12,0.06)] sm:p-7">
-        <div className="flex items-center gap-3 border-b border-[#F4F0EA] pb-4">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F4F0EA] text-[#23140C]">
-            <FontAwesomeIcon icon={faStar} className="h-4 w-4" />
-          </div>
-          <div>
-            <h2 className="font-display text-[17px] font-bold text-[#23140C]">
-              2. Earning Rules
-            </h2>
-            <p className="mt-0.5 text-[13.5px] leading-relaxed text-[#23140C]/80">
-              Define how and when customers earn stamps toward their reward.
-            </p>
-          </div>
-        </div>
+        {earningType === "purchase" && (
+          <div className="space-y-3">
+            <Select
+              label="Calculation"
+              value={purchaseMode}
+              onChange={(e) => setPurchaseMode(e.target.value)}
+              disabled={isSubmitting}
+            >
+              <option value="simple">Minimum spend</option>
+              <option value="tiers">Spend tiers</option>
+            </Select>
 
-        <div className="mt-5 space-y-5">
-          {/* Earning Type Selection Cards */}
-          <div>
-            <label className="mb-2 block text-[14.5px] font-semibold text-[#23140C]">
-              Earning Type <span className="text-[#A51D27]">*</span>
-            </label>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {[
-                {
-                  value: "visit",
-                  label: "Per Visit",
-                  hint: "Award stamps each time the customer visits your store",
-                },
-                {
-                  value: "purchase",
-                  label: "Spend Amount",
-                  hint: "Award stamps when customer spends a threshold amount",
-                },
-                {
-                  value: "quantity",
-                  label: "Item Quantity",
-                  hint: "Award stamps based on the quantity of items purchased",
-                },
-              ].map((opt) => {
-                const isSelected = selectedEarningType === opt.value;
-                return (
-                  <label
-                    key={opt.value}
-                    className={`flex cursor-pointer flex-col justify-between rounded-xl border p-4 transition ${
-                      isSelected
-                        ? "border-[#A51D27] bg-[#F4F0EA]/70 shadow-xs"
-                        : "border-[#F4F0EA] bg-white hover:bg-[#F4F0EA]/30"
-                    }`}
+            {purchaseMode === "simple" ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Input
+                  label="Minimum spend (NPR)"
+                  type="number"
+                  min="1"
+                  step="any"
+                  placeholder="1000"
+                  error={errors.threshold?.message}
+                  disabled={isSubmitting}
+                  {...register("threshold")}
+                />
+
+                <Input
+                  label="Stamps awarded"
+                  type="number"
+                  min="1"
+                  step="1"
+                  error={errors.stamps_awarded?.message}
+                  disabled={isSubmitting}
+                  {...register("stamps_awarded")}
+                />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {tiers.map((tier, i) => (
+                  <div
+                    key={i}
+                    className="space-y-3 rounded-lg bg-[#F4F0EA]/40 p-3"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[15px] font-bold text-[#23140C]">
-                        {opt.label}
-                      </span>
-                      <input
-                        type="radio"
-                        value={opt.value}
-                        {...register("earning_type")}
-                        className="h-4 w-4 text-[#A51D27] focus:ring-[#A51D27]"
+                    <RowHeader
+                      title={`Tier ${i + 1}`}
+                      onRemove={
+                        tiers.length > 1 ? () => removeTier(i) : undefined
+                      }
+                    />
+
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <Input
+                        label="From (NPR)"
+                        type="number"
+                        min="1"
+                        step="any"
+                        value={tier.min_amount}
+                        disabled={isSubmitting}
+                        onChange={(e) =>
+                          updateTier(i, "min_amount", e.target.value)
+                        }
+                      />
+
+                      <Input
+                        label="To (optional)"
+                        type="number"
+                        min="1"
+                        step="any"
+                        placeholder="No upper limit"
+                        value={tier.max_amount}
+                        disabled={isSubmitting}
+                        onChange={(e) =>
+                          updateTier(i, "max_amount", e.target.value)
+                        }
+                      />
+
+                      <Input
+                        label="Stamps"
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={tier.stamps_awarded}
+                        disabled={isSubmitting}
+                        onChange={(e) =>
+                          updateTier(i, "stamps_awarded", e.target.value)
+                        }
                       />
                     </div>
-                    <p className="mt-2 text-[13px] leading-relaxed text-[#23140C]/75">
-                      {opt.hint}
-                    </p>
-                  </label>
-                );
-              })}
-            </div>
-            {errors.earning_type && (
-              <p className="mt-1 text-[13px] font-medium text-red-600">
-                {errors.earning_type.message}
-              </p>
+                  </div>
+                ))}
+
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={addTier}
+                  disabled={isSubmitting}
+                >
+                  <FontAwesomeIcon icon={faPlus} />
+                  <span>Add tier</span>
+                </Button>
+              </div>
             )}
           </div>
+        )}
 
-          {/* Threshold & Stamps Awarded Grid */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {/* Threshold */}
-            <div>
-              <label
-                htmlFor="threshold"
-                className="mb-1.5 block text-[14.5px] font-semibold text-[#23140C]"
-              >
-                Threshold <span className="text-[#A51D27]">*</span>
-              </label>
-              <input
-                id="threshold"
-                type="number"
-                step="any"
-                min="0.01"
-                placeholder={
-                  selectedEarningType === "purchase"
-                    ? "e.g. 50"
-                    : selectedEarningType === "quantity"
-                    ? "e.g. 2"
-                    : "e.g. 1"
-                }
-                {...register("threshold")}
-                disabled={isSubmitting}
-                className={`w-full rounded-xl border bg-white px-4 py-2.5 text-[14.5px] text-[#23140C] transition focus:outline-none focus:ring-2 disabled:bg-[#F4F0EA]/50 ${
-                  errors.threshold
-                    ? "border-red-500 focus:border-red-600 focus:ring-red-500/20"
-                    : "border-[#F4F0EA] focus:border-[#A51D27] focus:ring-[#A51D27]/20"
-                }`}
-              />
-              <p className="mt-1.5 text-[13px] leading-normal text-[#23140C]/75">
-                {selectedEarningType === "visit"
-                  ? "Visits required per stamp cycle (usually 1)"
-                  : selectedEarningType === "purchase"
-                  ? "Minimum monetary spend per stamp"
-                  : "Number of items required per stamp"}
-              </p>
-              {errors.threshold && (
-                <p className="mt-1 text-[13px] font-medium text-red-600">
-                  {errors.threshold.message}
-                </p>
-              )}
+        {earningType === "quantity" &&
+          (loadingProducts ? (
+            <div className="flex items-center gap-2 py-2 text-sm text-ink-soft">
+              <Spinner size="sm" />
+              <span>Loading products…</span>
             </div>
-
-            {/* Stamps Awarded */}
-            <div>
-              <label
-                htmlFor="stamps_awarded"
-                className="mb-1.5 block text-[14.5px] font-semibold text-[#23140C]"
-              >
-                Stamps Awarded <span className="text-[#A51D27]">*</span>
-              </label>
-              <input
-                id="stamps_awarded"
-                type="number"
-                min="1"
-                step="1"
-                placeholder="e.g. 1"
-                {...register("stamps_awarded")}
-                disabled={isSubmitting}
-                className={`w-full rounded-xl border bg-white px-4 py-2.5 text-[14.5px] text-[#23140C] transition focus:outline-none focus:ring-2 disabled:bg-[#F4F0EA]/50 ${
-                  errors.stamps_awarded
-                    ? "border-red-500 focus:border-red-600 focus:ring-red-500/20"
-                    : "border-[#F4F0EA] focus:border-[#A51D27] focus:ring-[#A51D27]/20"
-                }`}
-              />
-              <p className="mt-1.5 text-[13px] leading-normal text-[#23140C]/75">
-                Stamps given once threshold is reached
-              </p>
-              {errors.stamps_awarded && (
-                <p className="mt-1 text-[13px] font-medium text-red-600">
-                  {errors.stamps_awarded.message}
-                </p>
-              )}
-            </div>
-
-            {/* Daily Stamp Limit */}
-            <div>
-              <label
-                htmlFor="daily_stamp_limit"
-                className="mb-1.5 block text-[14.5px] font-semibold text-[#23140C]"
-              >
-                Daily Limit{" "}
-                <span className="text-[13px] font-normal text-[#23140C]/60">(Optional)</span>
-              </label>
-              <input
-                id="daily_stamp_limit"
-                type="number"
-                min="1"
-                step="1"
-                placeholder="Leave blank for no limit"
-                {...register("daily_stamp_limit")}
-                disabled={isSubmitting}
-                className={`w-full rounded-xl border bg-white px-4 py-2.5 text-[14.5px] text-[#23140C] transition focus:outline-none focus:ring-2 disabled:bg-[#F4F0EA]/50 ${
-                  errors.daily_stamp_limit
-                    ? "border-red-500 focus:border-red-600 focus:ring-red-500/20"
-                    : "border-[#F4F0EA] focus:border-[#A51D27] focus:ring-[#A51D27]/20"
-                }`}
-              />
-              <p className="mt-1.5 text-[13px] leading-normal text-[#23140C]/75">
-                Max stamps one customer can earn per day
-              </p>
-              {errors.daily_stamp_limit && (
-                <p className="mt-1 text-[13px] font-medium text-red-600">
-                  {errors.daily_stamp_limit.message}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 3: Reward Information (Keep Reward intact) */}
-      <section className="rounded-2xl bg-white p-6 shadow-[0_2px_12px_rgba(35,20,12,0.06)] sm:p-7">
-        <div className="flex items-center gap-3 border-b border-[#F4F0EA] pb-4">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F4F0EA] text-[#23140C]">
-            <FontAwesomeIcon icon={faGift} className="h-4 w-4" />
-          </div>
-          <div>
-            <h2 className="font-display text-[17px] font-bold text-[#23140C]">
-              3. Reward Information
-            </h2>
-            <p className="mt-0.5 text-[13.5px] leading-relaxed text-[#23140C]/80">
-              Specify what customers receive when their stamp card is completed.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-5 space-y-5">
-          {/* Reward Title */}
-          <div>
-            <label
-              htmlFor="reward_title"
-              className="mb-1.5 block text-[14.5px] font-semibold text-[#23140C]"
-            >
-              Reward Title <span className="text-[#A51D27]">*</span>
-            </label>
-            <input
-              id="reward_title"
-              type="text"
-              placeholder="e.g. Free Specialty Latte, 20% Off Next Treatment"
-              {...register("reward_title")}
-              disabled={isSubmitting}
-              className={`w-full rounded-xl border bg-white px-4 py-2.5 text-[14.5px] text-[#23140C] placeholder:text-[#23140C]/45 transition focus:outline-none focus:ring-2 disabled:bg-[#F4F0EA]/50 ${
-                errors.reward_title
-                  ? "border-red-500 focus:border-red-600 focus:ring-red-500/20"
-                  : "border-[#F4F0EA] focus:border-[#A51D27] focus:ring-[#A51D27]/20"
-              }`}
+          ) : products.length === 0 ? (
+            <EmptyState
+              icon={faBox}
+              title="No active products"
+              description="Per-product programs use items from your catalog."
+              action={
+                <Link to="/merchant/products">
+                  <Button type="button" variant="secondary" size="sm">
+                    Go to products
+                  </Button>
+                </Link>
+              }
             />
-            {errors.reward_title && (
-              <p className="mt-1 text-[13px] font-medium text-red-600">
-                {errors.reward_title.message}
-              </p>
-            )}
-          </div>
+          ) : (
+            <div className="space-y-3">
+              {rules.map((rule, i) => (
+                <div
+                  key={i}
+                  className="space-y-3 rounded-lg bg-[#F4F0EA]/40 p-3"
+                >
+                  <RowHeader
+                    title={`Rule ${i + 1}`}
+                    onRemove={
+                      rules.length > 1 ? () => removeRule(i) : undefined
+                    }
+                  />
 
-          {/* Reward Description */}
-          <div>
-            <label
-              htmlFor="reward_description"
-              className="mb-1.5 block text-[14.5px] font-semibold text-[#23140C]"
-            >
-              Reward Description{" "}
-              <span className="text-[13px] font-normal text-[#23140C]/60">(Optional)</span>
-            </label>
-            <textarea
-              id="reward_description"
-              rows={2}
-              placeholder="e.g. Valid on any hot or iced drink. Cannot be combined with other offers."
-              {...register("reward_description")}
-              disabled={isSubmitting}
-              className={`w-full rounded-xl border bg-white px-4 py-2.5 text-[14.5px] text-[#23140C] placeholder:text-[#23140C]/45 transition focus:outline-none focus:ring-2 disabled:bg-[#F4F0EA]/50 ${
-                errors.reward_description
-                  ? "border-red-500 focus:border-red-600 focus:ring-red-500/20"
-                  : "border-[#F4F0EA] focus:border-[#A51D27] focus:ring-[#A51D27]/20"
-              }`}
-            />
-            {errors.reward_description && (
-              <p className="mt-1 text-[13px] font-medium text-red-600">
-                {errors.reward_description.message}
-              </p>
-            )}
-          </div>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <Select
+                      label="Product"
+                      className="sm:col-span-2"
+                      value={rule.product_id}
+                      onChange={(e) =>
+                        updateRule(i, "product_id", e.target.value)
+                      }
+                      disabled={isSubmitting}
+                    >
+                      <option value="">Choose a product</option>
 
-          {/* Reward Type, Value & Voucher Validity Grid */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {/* Reward Type */}
-            <div>
-              <label
-                htmlFor="reward_type"
-                className="mb-1.5 block text-[14.5px] font-semibold text-[#23140C]"
+                      {products.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} (NPR {Number(p.price).toFixed(2)})
+                        </option>
+                      ))}
+                    </Select>
+
+                    <Input
+                      label="Quantity"
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={rule.quantity_required}
+                      disabled={isSubmitting}
+                      onChange={(e) =>
+                        updateRule(i, "quantity_required", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  <RewardFields
+                    rewardType={rule.reward_type}
+                    disabled={isSubmitting}
+                    field={(n) => ({
+                      value: rule[n] ?? "",
+                      onChange: (e) => updateRule(i, n, e.target.value),
+                    })}
+                  />
+                </div>
+              ))}
+
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={addRule}
+                disabled={isSubmitting || products.length <= rules.length}
               >
-                Reward Type <span className="text-[#A51D27]">*</span>
-              </label>
-              <select
-                id="reward_type"
-                {...register("reward_type")}
-                disabled={isSubmitting}
-                className={`w-full rounded-xl border bg-white px-4 py-2.5 text-[14.5px] text-[#23140C] transition focus:outline-none focus:ring-2 disabled:bg-[#F4F0EA]/50 ${
-                  errors.reward_type
-                    ? "border-red-500 focus:border-red-600 focus:ring-red-500/20"
-                    : "border-[#F4F0EA] focus:border-[#A51D27] focus:ring-[#A51D27]/20"
-                }`}
-              >
-                <option value="free_item">Free Item / Product</option>
-                <option value="discount_percentage">Percentage Discount (%)</option>
-                <option value="discount_fixed">Fixed Amount Discount ($)</option>
-                <option value="custom">Custom Perk / Experience</option>
-              </select>
-              {errors.reward_type && (
-                <p className="mt-1 text-[13px] font-medium text-red-600">
-                  {errors.reward_type.message}
-                </p>
-              )}
+                <FontAwesomeIcon icon={faPlus} />
+                <span>Add product rule</span>
+              </Button>
             </div>
+          ))}
+      </Section>
 
-            {/* Reward Value */}
-            <div>
-              <label
-                htmlFor="reward_value"
-                className="mb-1.5 block text-[14.5px] font-semibold text-[#23140C]"
-              >
-                Reward Value{" "}
-                <span className="text-[13px] font-normal text-[#23140C]/60">
-                  {selectedRewardType === "discount_percentage"
-                    ? "(e.g. 15 for 15%)"
-                    : "(Optional)"}
-                </span>
-              </label>
-              <input
-                id="reward_value"
-                type="number"
-                step="any"
-                min="0"
-                placeholder={
-                  selectedRewardType === "discount_percentage"
-                    ? "e.g. 20"
-                    : "e.g. 5"
-                }
-                {...register("reward_value")}
-                disabled={isSubmitting}
-                className={`w-full rounded-xl border bg-white px-4 py-2.5 text-[14.5px] text-[#23140C] transition focus:outline-none focus:ring-2 disabled:bg-[#F4F0EA]/50 ${
-                  errors.reward_value
-                    ? "border-red-500 focus:border-red-600 focus:ring-red-500/20"
-                    : "border-[#F4F0EA] focus:border-[#A51D27] focus:ring-[#A51D27]/20"
-                }`}
-              />
-              <p className="mt-1.5 text-[13px] leading-normal text-[#23140C]/75">
-                Numeric discount value or retail equivalent
-              </p>
-              {errors.reward_value && (
-                <p className="mt-1 text-[13px] font-medium text-red-600">
-                  {errors.reward_value.message}
-                </p>
-              )}
-            </div>
+      {/* Reward */}
 
-            {/* Voucher Validity Days */}
-            <div>
-              <label
-                htmlFor="voucher_validity_days"
-                className="mb-1.5 block text-[14.5px] font-semibold text-[#23140C]"
-              >
-                Voucher Validity <span className="text-[#A51D27]">*</span>
-              </label>
-              <input
-                id="voucher_validity_days"
-                type="number"
-                min="1"
-                step="1"
-                placeholder="30"
-                {...register("voucher_validity_days")}
-                disabled={isSubmitting}
-                className={`w-full rounded-xl border bg-white px-4 py-2.5 text-[14.5px] text-[#23140C] transition focus:outline-none focus:ring-2 disabled:bg-[#F4F0EA]/50 ${
-                  errors.voucher_validity_days
-                    ? "border-red-500 focus:border-red-600 focus:ring-red-500/20"
-                    : "border-[#F4F0EA] focus:border-[#A51D27] focus:ring-[#A51D27]/20"
-                }`}
-              />
-              <p className="mt-1.5 text-[13px] leading-normal text-[#23140C]/75">
-                Days customer has to redeem the voucher
-              </p>
-              {errors.voucher_validity_days && (
-                <p className="mt-1 text-[13px] font-medium text-red-600">
-                  {errors.voucher_validity_days.message}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
+      {earningType !== "quantity" && (
+        <Section title="Reward">
+          <RewardFields
+            field={register}
+            rewardType={rewardType}
+            disabled={isSubmitting}
+          />
+        </Section>
+      )}
 
-      {/* Program Summary Preview */}
-      <div className="rounded-2xl border border-[#F4F0EA] bg-[#F4F0EA]/60 p-5">
-        <div className="flex items-start gap-3">
-          <FontAwesomeIcon icon={faInfoCircle} className="mt-0.5 text-base text-[#A51D27]" />
-          <div>
-            <h4 className="text-[14px] font-bold uppercase tracking-wider text-[#23140C]">
-              Program Summary
-            </h4>
-            <p className="mt-1.5 text-[13.5px] leading-relaxed text-[#23140C]/85">
-              Customers in <strong>{watchedName || "Your Program"}</strong> will earn{" "}
-              <strong>{watchedStamps || 1} stamp(s)</strong> per qualifying{" "}
-              <strong>{selectedEarningType}</strong> (threshold: {watchedThreshold || 1}).
-              Upon completing their stamps, they receive <strong>{watchedRewardTitle || "their reward"}</strong>,
-              valid for redemption within voucher validity period.
-            </p>
-          </div>
-        </div>
-      </div>
+      {/* Error */}
 
-      {/* Form Action Buttons */}
-      <div className="flex items-center justify-end gap-3 border-t border-[#F4F0EA] pt-5">
+      {error && (
+        <p role="alert" className="text-sm font-medium text-red-600">
+          {error}
+        </p>
+      )}
+
+      {/* Actions */}
+
+      <div className="flex items-center justify-end gap-2 pt-2">
         {onCancel && (
           <Button
             type="button"
-            variant="ghost"
+            variant="soft"
             onClick={onCancel}
             disabled={isSubmitting}
           >
@@ -610,8 +784,8 @@ export const LoyaltyProgramForm = ({
           loading={isSubmitting}
           disabled={isSubmitting}
         >
-          <FontAwesomeIcon icon={faCheck} />
-          <span>{isSubmitting ? "Creating Loyalty Program..." : "Save & Create Loyalty Program"}</span>
+          Create
+          <FontAwesomeIcon icon={faPlus} />
         </Button>
       </div>
     </form>
@@ -619,4 +793,3 @@ export const LoyaltyProgramForm = ({
 };
 
 export default LoyaltyProgramForm;
-

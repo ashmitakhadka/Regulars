@@ -11,6 +11,8 @@ use App\Models\UserMerchantStat;
 use Illuminate\Support\Facades\DB;
 use App\Models\StampTransaction;
 use App\Models\Voucher;
+use App\Models\VoucherRedemption;
+
 
 class MerchantCustomerController extends Controller
 {
@@ -442,6 +444,69 @@ public function enrollCustomer(Request $request)
             ],
         ], 201);
     });
+}
+
+public function getAllCustomersRecentActivity(Request $request)
+{
+    $merchant = $request->user()->merchant;
+
+    // Fetch recent stamp activities
+    $stampActivities = StampTransaction::whereHas(
+        'stampCard',
+        function ($query) use ($merchant) {
+            $query->whereHas('loyaltyProgram', function ($programQuery) use ($merchant) {
+                $programQuery->where('merchant_id', $merchant->id);
+            });
+        }
+    )
+        ->with([
+            'stampCard.customer',
+            'stampCard.loyaltyProgram',
+        ])
+        ->latest()
+        ->take(10)
+        ->get()
+        ->map(function ($transaction) {
+            return [
+                'id' => 'stamp_' . $transaction->id,
+                'customer_name' => $transaction->stampCard->customer->name ?? 'Unknown Customer',
+                'action' => 'earned stamps',
+                'detail' => $transaction->stamps_awarded . ' stamps · ' .
+                    ($transaction->stampCard->loyaltyProgram->name ?? 'Loyalty Program'),
+                'created_at' => $transaction->created_at,
+            ];
+        });
+
+    // Fetch recent voucher redemptions
+    $redemptionActivities = VoucherRedemption::where('merchant_id', $merchant->id)
+        ->with([
+            'voucher.customer',
+            'voucher',
+        ])
+        ->latest('redeemed_at')
+        ->take(10)
+        ->get()
+        ->map(function ($redemption) {
+            return [
+                'id' => 'redemption_' . $redemption->id,
+                'customer_name' => $redemption->voucher->customer->name ?? 'Unknown Customer',
+                'action' => 'redeemed a voucher',
+                'detail' => $redemption->voucher->reward_title ?? 'Reward',
+                'created_at' => $redemption->redeemed_at,
+            ];
+        });
+
+    // Combine and return latest four activities
+    $activities = $stampActivities
+        ->concat($redemptionActivities)
+        ->sortByDesc('created_at')
+        ->take(4)
+        ->values();
+
+    return response()->json([
+        'success' => true,
+        'data' => $activities,
+    ]);
 }
 
 }
