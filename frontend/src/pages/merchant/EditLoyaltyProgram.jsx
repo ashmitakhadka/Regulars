@@ -171,7 +171,7 @@ export const EditLoyaltyProgram = () => {
     <div className="flex min-h-screen flex-col bg-white md:flex-row">
       <MerchantSidebar />
 
-      <main className="w-full flex-1 p-5 sm:p-8">
+      <main className="w-full min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
         {/* Back arrow button, top left */}
         <BackButton
           to={`/merchant/loyalty-programs/${id}`}
@@ -217,7 +217,7 @@ export const EditLoyaltyProgram = () => {
         )}
 
         {!loading && !error && program && !isArchived && (
-          <div className="mx-auto mt-4 w-full max-w-2xl rounded-2xl bg-white p-6 shadow-[0_8px_30px_rgba(35,20,12,0.08)] sm:p-8">
+          <div className="mx-auto mt-4 w-full max-w-2xl rounded-2xl bg-white p-5 sm:p-8 lg:p-10 shadow-[0_8px_30px_rgba(35,20,12,0.08)]">
             <h1 className="font-display text-[26px] font-bold tracking-tight text-[#23140C] sm:text-[28px]">
               Edit loyalty program
             </h1>
@@ -295,12 +295,13 @@ export const EditLoyaltyProgram = () => {
                 </dl>
               </section>
 
-              <div className="flex items-center justify-end gap-3">
+              <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
                 <Button
                   type="button"
                   variant="soft"
                   onClick={() => navigate(`/merchant/loyalty-programs/${id}`)}
                   disabled={isSubmitting}
+                  className="w-full sm:w-auto"
                 >
                   Cancel
                 </Button>
@@ -310,8 +311,9 @@ export const EditLoyaltyProgram = () => {
                   variant="primary"
                   loading={isSubmitting}
                   disabled={isSubmitting || !isDirty}
+                  className="w-full sm:w-auto"
                 >
-                  {isSubmitting ? "Saving…" : "Save "}
+                  {isSubmitting ? "Saving…" : "Save changes"}
                 </Button>
               </div>
             </form>

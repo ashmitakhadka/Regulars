@@ -63,7 +63,7 @@ export const ProductFormModal = ({
       aria-modal="true"
       aria-labelledby="product-modal-title"
     >
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+      <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-5 sm:p-6 shadow-2xl">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2
@@ -158,13 +158,14 @@ export const ProductFormModal = ({
             </div>
           )}
 
-          <div className="flex items-center justify-end gap-2  pt-2">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-2.5 pt-2">
             <Button
               type="button"
               variant="soft"
               size="sm"
               onClick={onClose}
               disabled={isSubmitting}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
@@ -174,8 +175,9 @@ export const ProductFormModal = ({
               size="sm"
               loading={isSubmitting}
               disabled={isSubmitting}
+              className="w-full sm:w-auto"
             >
-              {isEditing ? "Save changes" : "Add "}
+              {isEditing ? "Save changes" : "Add product"}
             </Button>
           </div>
         </form>

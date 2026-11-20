@@ -21,7 +21,7 @@ export const DeleteProductModal = ({
       aria-modal="true"
       aria-labelledby="delete-product-title"
     >
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl sm:p-7">
+      <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-5 sm:p-7 shadow-2xl">
         {/* Header */}
         <div className="flex items-start gap-3.5">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700">
@@ -63,13 +63,14 @@ export const DeleteProductModal = ({
         </p>
 
         {/* Action Buttons */}
-        <div className="mt-6 flex items-center justify-end gap-3 border-t border-[#F4F0EA] pt-4">
+        <div className="mt-6 flex flex-col-reverse gap-2.5 sm:flex-row sm:items-center sm:justify-end sm:gap-3 border-t border-[#F4F0EA] pt-4">
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={onClose}
             disabled={isDeleting}
+            className="w-full sm:w-auto"
           >
             Cancel
           </Button>
@@ -81,7 +82,7 @@ export const DeleteProductModal = ({
             onClick={onConfirm}
             loading={isDeleting}
             disabled={isDeleting}
-            className="!bg-red-700 hover:!bg-red-800 text-white"
+            className="w-full sm:w-auto !bg-red-700 hover:!bg-red-800 text-white"
           >
             <FontAwesomeIcon icon={faTrash} />
             <span>{isDeleting ? "Deleting..." : "Delete Product"}</span>

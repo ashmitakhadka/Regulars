@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faEnvelope,
-  faPhone,
-} from "@fortawesome/free-solid-svg-icons";
+import { faEnvelope, faPhone } from "@fortawesome/free-solid-svg-icons";
 
 import { MerchantSidebar } from "../../components/merchant/MerchantSidebar";
 import { AwardStampsModal } from "../../components/merchant/customers/AwardStampsModal";
@@ -146,8 +143,8 @@ export const CustomerDetails = () => {
           {!loading && !error && customer && (
             <div className="space-y-7">
               {/* Customer Header */}
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex flex-wrap items-center gap-x-5 gap-y-3 -ml-20">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                   <div className="flex items-center gap-3">
                     <BackButton size="xs" to={LIST_PATH} iconOnly />
 
@@ -182,11 +179,13 @@ export const CustomerDetails = () => {
                     variant="primary"
                     size="sm"
                     onClick={() => openAward()}
+                    className="w-full sm:w-auto self-start sm:self-auto shrink-0"
                   >
                     Award stamps
                   </Button>
                 )}
               </div>
+
               {/* Enrolled Loyalty Programs */}
               <Card>
                 <div className="mb-5">

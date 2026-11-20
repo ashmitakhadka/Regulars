@@ -21,7 +21,7 @@ export const ArchiveConfirmation = ({
       aria-modal="true"
       aria-labelledby="archive-modal-title"
     >
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl sm:p-7">
+      <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-5 sm:p-7 shadow-2xl">
         {/* Header with Icon */}
         <div className="flex items-start gap-3.5">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-900">
@@ -65,13 +65,14 @@ export const ArchiveConfirmation = ({
         </p>
 
         {/* Action Buttons */}
-        <div className="mt-6 flex items-center justify-end gap-3 border-t border-[#F4F0EA] pt-4">
+        <div className="mt-6 flex flex-col-reverse gap-2.5 sm:flex-row sm:items-center sm:justify-end sm:gap-3 border-t border-[#F4F0EA] pt-4">
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={onCancel}
             disabled={isArchiving}
+            className="w-full sm:w-auto"
           >
             Cancel
           </Button>
@@ -83,7 +84,7 @@ export const ArchiveConfirmation = ({
             onClick={onConfirm}
             loading={isArchiving}
             disabled={isArchiving}
-            className="!bg-amber-800 hover:!bg-amber-900"
+            className="w-full sm:w-auto !bg-amber-800 hover:!bg-amber-900"
           >
             <FontAwesomeIcon icon={faBoxArchive} />
             <span>{isArchiving ? "Archiving..." : "Confirm Archive"}</span>

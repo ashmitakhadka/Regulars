@@ -213,7 +213,7 @@ export const Vouchers = () => {
     <div className="flex min-h-screen flex-col bg-white md:flex-row">
       <MerchantSidebar />
 
-      <main className="w-full flex-1 p-5 sm:p-8">
+      <main className="w-full min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
         <div className="mx-auto w-full max-w-6xl">
           <div>
             <h1 className="font-display text-[26px] font-bold tracking-tight text-[#23140C] sm:text-[28px]">
@@ -272,7 +272,7 @@ export const Vouchers = () => {
                     </p>
                   </div>
 
-                  <div className="flex w-full items-start gap-3 sm:w-[420px]">
+                  <div className="flex flex-col sm:flex-row w-full items-stretch sm:items-start gap-2.5 sm:gap-3 sm:w-[420px]">
                     <div className="flex-1">
                       <Input
                         aria-label="Voucher code"
@@ -291,6 +291,7 @@ export const Vouchers = () => {
                       size="md"
                       loading={isSubmitting}
                       disabled={isSubmitting || !code.trim()}
+                      className="w-full sm:w-auto"
                     >
                       Redeem
                     </Button>
@@ -368,70 +369,117 @@ export const Vouchers = () => {
                   }
                 />
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[640px] text-left text-[14px]">
-                    <thead>
-                      <tr className="bg-[#F4F0EA]/50 text-[12px] uppercase tracking-wide text-[#23140C]/55">
-                        <th className="px-5 py-3 font-medium">Code</th>
-                        <th className="px-5 py-3 font-medium">Customer</th>
-                        <th className="px-5 py-3 font-medium">Reward</th>
-                        <th className="px-5 py-3 font-medium">
-                          {activeTab.dateLabel}
-                        </th>
-                        <th className="px-5 py-3 font-medium">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#F4F0EA]">
-                      {vouchers.map((v) => {
-                        const dateValue = v[activeTab.dateField];
-                        const hint =
-                          tab === "active" ? daysLeftText(dateValue) : null;
+                <>
+                  {/* Desktop Table View */}
+                  <div className="hidden sm:block overflow-x-auto">
+                    <table className="w-full min-w-[640px] text-left text-[14px]">
+                      <thead>
+                        <tr className="bg-[#F4F0EA]/50 text-[12px] uppercase tracking-wide text-[#23140C]/55">
+                          <th className="px-5 py-3 font-medium">Code</th>
+                          <th className="px-5 py-3 font-medium">Customer</th>
+                          <th className="px-5 py-3 font-medium">Reward</th>
+                          <th className="px-5 py-3 font-medium">
+                            {activeTab.dateLabel}
+                          </th>
+                          <th className="px-5 py-3 font-medium">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#F4F0EA]">
+                        {vouchers.map((v) => {
+                          const dateValue = v[activeTab.dateField];
+                          const hint =
+                            tab === "active" ? daysLeftText(dateValue) : null;
 
-                        return (
-                          <tr
-                            key={v.id ?? v.code}
-                            className="transition-colors hover:bg-[#F4F0EA]/30"
-                          >
-                            <td className="px-5 py-3.5 font-mono text-[13.5px] font-semibold text-[#A51D27]">
-                              {v.code}
-                            </td>
-                            <td className="px-5 py-3.5">
-                              <div className="flex items-center gap-3">
-                                <span className="text-[#23140C]">
-                                  {v.customer_name || "—"}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-5 py-3.5">
-                              <p className="text-[#23140C]">{v.reward_title}</p>
-                              <p className="text-[12.5px] text-[#23140C]/55">
-                                {formatReward(v.reward_type, v.reward_value)}
-                              </p>
-                            </td>
-                            <td className="px-5 py-3.5">
-                              <p className="text-[#23140C]">
-                                {formatDate(dateValue)}
-                              </p>
-                              {hint && (
+                          return (
+                            <tr
+                              key={v.id ?? v.code}
+                              className="transition-colors hover:bg-[#F4F0EA]/30"
+                            >
+                              <td className="px-5 py-3.5 font-mono text-[13.5px] font-semibold text-[#A51D27]">
+                                {v.code}
+                              </td>
+                              <td className="px-5 py-3.5">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-[#23140C]">
+                                    {v.customer_name || "—"}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-5 py-3.5">
+                                <p className="text-[#23140C]">{v.reward_title}</p>
                                 <p className="text-[12.5px] text-[#23140C]/55">
-                                  {hint}
+                                  {formatReward(v.reward_type, v.reward_value)}
                                 </p>
-                              )}
-                            </td>
-                            <td className="px-5 py-3.5">
-                              <Tag variant={STATUS_TAG[v.status] || "cream"}>
-                                {v.status
-                                  ? v.status.charAt(0).toUpperCase() +
-                                    v.status.slice(1)
-                                  : "—"}
-                              </Tag>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                              </td>
+                              <td className="px-5 py-3.5">
+                                <p className="text-[#23140C]">
+                                  {formatDate(dateValue)}
+                                </p>
+                                {hint && (
+                                  <p className="text-[12.5px] text-[#23140C]/55">
+                                    {hint}
+                                  </p>
+                                )}
+                              </td>
+                              <td className="px-5 py-3.5">
+                                <Tag variant={STATUS_TAG[v.status] || "cream"}>
+                                  {v.status
+                                    ? v.status.charAt(0).toUpperCase() +
+                                      v.status.slice(1)
+                                    : "—"}
+                                </Tag>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Card List */}
+                  <div className="divide-y divide-[#F4F0EA] sm:hidden">
+                    {vouchers.map((v) => {
+                      const dateValue = v[activeTab.dateField];
+                      const hint =
+                        tab === "active" ? daysLeftText(dateValue) : null;
+
+                      return (
+                        <div key={v.id ?? v.code} className="p-4 space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-mono text-[14px] font-bold text-[#A51D27]">
+                              {v.code}
+                            </span>
+                            <Tag variant={STATUS_TAG[v.status] || "cream"}>
+                              {v.status
+                                ? v.status.charAt(0).toUpperCase() +
+                                  v.status.slice(1)
+                                : "—"}
+                            </Tag>
+                          </div>
+
+                          <div>
+                            <p className="font-semibold text-sm text-[#23140C]">
+                              {v.reward_title}
+                            </p>
+                            <p className="text-xs text-[#23140C]/60">
+                              {formatReward(v.reward_type, v.reward_value)}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center justify-between text-xs text-[#23140C]/70 pt-1">
+                            <span className="font-medium text-[#23140C]/80">
+                              {v.customer_name || "Guest Customer"}
+                            </span>
+                            <span>
+                              {activeTab.dateLabel}: {formatDate(dateValue)}
+                              {hint && ` (${hint})`}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
               )}
 
               {!tableLoading && !tableError && meta.last_page > 1 && (

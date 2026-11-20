@@ -130,7 +130,7 @@ export const LoyaltyProgramDetails = () => {
     <div className="flex min-h-screen flex-col bg-white md:flex-row">
       <MerchantSidebar />
 
-      <main className="w-full flex-1 p-5 sm:p-8">
+      <main className="w-full min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
         {/* Loading */}
         {loading && (
           <div className="flex min-h-[300px] flex-col items-center justify-center gap-3 rounded-2xl bg-[#F4F0EA]/40 p-8">
@@ -169,24 +169,25 @@ export const LoyaltyProgramDetails = () => {
         {!loading && !error && program && (
           <>
             {/* Back arrow, title and actions */}
-            <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
+            <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3 min-w-0">
                 <BackButton
                   size="xs"
                   to="/merchant/loyalty-programs"
                   iconOnly
                 />
-                <h1 className="font-display text-[26px] font-bold tracking-tight text-[#23140C] sm:text-[28px]">
+                <h1 className="truncate font-display text-xl font-bold tracking-tight text-[#23140C] sm:text-2xl lg:text-3xl">
                   {program.name}
                 </h1>
               </div>
 
               {!isArchived && (
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                   <Button
                     to={`/merchant/loyalty-programs/${program.id}/edit`}
                     variant="soft"
                     size="sm"
+                    className="flex-1 sm:flex-initial"
                   >
                     Edit
                   </Button>
@@ -195,6 +196,7 @@ export const LoyaltyProgramDetails = () => {
                     variant={isActive ? "secondary" : "primary"}
                     size="sm"
                     onClick={() => setStatusModalOpen(true)}
+                    className="flex-1 sm:flex-initial"
                   >
                     {isActive ? "Deactivate" : "Activate"}
                   </Button>
@@ -203,6 +205,7 @@ export const LoyaltyProgramDetails = () => {
                     variant="soft"
                     size="sm"
                     onClick={() => setArchiveModalOpen(true)}
+                    className="flex-1 sm:flex-initial"
                   >
                     Archive
                   </Button>
@@ -236,12 +239,13 @@ export const LoyaltyProgramDetails = () => {
                       : "Customers will start earning stamps on qualifying visits and purchases right away."}
                   </p>
 
-                  <div className="mt-6 flex items-center justify-end gap-2">
+                  <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-2.5">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setStatusModalOpen(false)}
                       disabled={isUpdatingStatus}
+                      className="w-full sm:w-auto"
                     >
                       Cancel
                     </Button>
@@ -252,6 +256,7 @@ export const LoyaltyProgramDetails = () => {
                       onClick={handleToggleStatus}
                       loading={isUpdatingStatus}
                       disabled={isUpdatingStatus}
+                      className="w-full sm:w-auto"
                     >
                       {isActive ? "Deactivate" : "Activate"}
                     </Button>

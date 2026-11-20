@@ -105,7 +105,7 @@ export const EnrollCustomerModal = ({ isOpen, onClose, onEnrolled }) => {
       aria-modal="true"
       aria-labelledby="enroll-modal-title"
     >
-      <div className="w-full max-w-md rounded-2xl border border-blush-200 bg-white p-6 shadow-xl">
+      <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-blush-200 bg-white p-5 sm:p-6 shadow-xl">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2
@@ -201,13 +201,14 @@ export const EnrollCustomerModal = ({ isOpen, onClose, onEnrolled }) => {
             )}
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-2">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-2.5 pt-2">
             <Button
               type="button"
               variant="soft"
               size="sm"
               onClick={onClose}
               disabled={isSubmitting}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
@@ -217,6 +218,7 @@ export const EnrollCustomerModal = ({ isOpen, onClose, onEnrolled }) => {
               size="sm"
               loading={isSubmitting}
               disabled={isSubmitting || programs.length === 0}
+              className="w-full sm:w-auto"
             >
               Enroll
             </Button>

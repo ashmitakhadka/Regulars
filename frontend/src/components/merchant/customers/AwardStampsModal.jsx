@@ -165,7 +165,7 @@ const AwardStampsModalContent = ({
       aria-modal="true"
       aria-labelledby="award-modal-title"
     >
-      <div className="w-full max-w-md rounded-2xl border border-blush-200 bg-white p-6 shadow-xl">
+      <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-blush-200 bg-white p-5 sm:p-6 shadow-xl">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2
@@ -362,13 +362,14 @@ const AwardStampsModalContent = ({
                   </>
                 )}
 
-                <div className="flex items-center justify-end gap-2 pt-2">
+                <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-2.5 pt-2">
                   <Button
                     type="button"
                     variant="soft"
                     size="sm"
                     onClick={onClose}
                     disabled={isSubmitting}
+                    className="w-full sm:w-auto"
                   >
                     Cancel
                   </Button>
@@ -378,6 +379,7 @@ const AwardStampsModalContent = ({
                     size="sm"
                     loading={isSubmitting}
                     disabled={isSubmitting || loadingProgram || !selectedCardId}
+                    className="w-full sm:w-auto"
                   >
                     Award
                   </Button>

@@ -200,23 +200,28 @@ export const Products = () => {
   ];
 
   return (
-    <div className="flex min-h-screen bg-white md:flex-row">
+    <div className="flex min-h-screen flex-col bg-white md:flex-row">
       <MerchantSidebar />
 
-      <main className="min-w-0 flex-1 p-5 sm:p-8">
+      <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
         <div className="mx-auto max-w-7xl">
           {/* Page Header */}
-          <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-[#23140C] sm:text-3xl">
+              <h1 className="text-xl font-bold tracking-tight text-[#23140C] sm:text-2xl lg:text-3xl">
                 Products
               </h1>
             </div>
 
             <div className="flex items-center gap-2">
-              <Button variant="primary" size="sm" onClick={openCreateModal}>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={openCreateModal}
+                className="w-full sm:w-auto"
+              >
                 <FontAwesomeIcon icon={faPlus} />
-                Add Product
+                <span>Add Product</span>
               </Button>
             </div>
           </header>
