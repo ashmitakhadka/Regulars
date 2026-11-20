@@ -12,7 +12,7 @@ const formatDate = (dateString) => {
 };
 
 // One readable sentence for how customers earn.
-const getEarningSummary = (rule, tiers, productRules) => {
+const getEarningSummary = (rule, tiers) => {
   if (!rule) return "Earning rules not set";
 
   const threshold = Number(rule.threshold) || 0;
@@ -96,7 +96,7 @@ export const LoyaltyProgramDetailsCard = ({ program }) => {
         <Section title="Earning and reward">
           <dl className="grid grid-cols-[7rem_1fr] gap-x-4 gap-y-3">
             <Row label="Earn">
-              {getEarningSummary(earningRule, tiers, productRules)}
+              {getEarningSummary(earningRule, tiers)}
             </Row>
 
             {earningRule?.daily_stamp_limit && (
@@ -124,11 +124,31 @@ export const LoyaltyProgramDetailsCard = ({ program }) => {
                   </Row>
                 )}
 
+                {reward.stamps_required && (
+                  <Row label="Target">
+                    {plural(Number(reward.stamps_required), "stamp")} required to complete reward
+                  </Row>
+                )}
+
                 {reward.voucher_validity_days && (
                   <Row label="Validity">
                     {reward.voucher_validity_days} days
                   </Row>
                 )}
+
+                <Row label="Vouchers">
+                  <span
+                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
+                      activeVersion?.issues_voucher !== false
+                        ? "bg-emerald-50 text-emerald-700"
+                        : "bg-amber-50 text-amber-800"
+                    }`}
+                  >
+                    {activeVersion?.issues_voucher !== false
+                      ? "Automatic issuance enabled"
+                      : "No vouchers (completion only)"}
+                  </span>
+                </Row>
               </>
             )}
           </dl>

@@ -32,6 +32,8 @@ export const loyaltyProgramSchema = z.object({
   ),
   threshold: optionalNumber("Enter a number."),
   stamps_awarded: optionalNumber("Enter a whole number."),
+  stamps_required: optionalNumber("Stamps required must be a whole number."),
+  issues_voucher: z.boolean().default(true),
   reward_title: z.string().optional(),
   reward_description: z.string().optional(),
   reward_type: z.string().optional(),

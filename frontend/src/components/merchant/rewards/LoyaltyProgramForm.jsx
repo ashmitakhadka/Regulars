@@ -13,12 +13,14 @@ import {
 
 import { Button, Input, Spinner, EmptyState } from "../../ui";
 import { productService } from "../../../services/productService";
-import { loyaltyProgramSchema } from "../../../schema/loyaltyProgramSchema";
+import {
+  getLoyaltyProgramSchema,
+  tiersSchema,
+  getProductRulesSchema,
+  formatSchemaError,
+} from "../../../schema/loyaltyProgramFormSchema";
 
 /* ---------- helpers ---------- */
-
-const num = (v) =>
-  v === "" || v === null || v === undefined ? null : Number(v);
 
 const text = (v) => (v?.trim() ? v.trim() : null);
 
@@ -26,14 +28,17 @@ const EARNING_TYPES = [
   {
     value: "visit",
     label: "Per visit",
+    hint: "Customers earn stamps each time they visit.",
   },
   {
     value: "purchase",
     label: "Per spend",
+    hint: "Customers earn stamps based on how much they spend.",
   },
   {
     value: "quantity",
     label: "Per product",
+    hint: "Customers earn rewards for buying specific products.",
   },
 ];
 
@@ -119,12 +124,13 @@ const Section = ({ title, description, children }) => (
 );
 
 /** Reward inputs shared by every earning type. */
-const RewardFields = ({ field, rewardType, disabled }) => (
+const RewardFields = ({ field, rewardType, disabled, errors = {} }) => (
   <div className="space-y-3">
     <div className="grid gap-3 sm:grid-cols-2">
       <Input
         label="Reward title"
         placeholder="e.g. Free latte"
+        error={errors.reward_title?.message}
         disabled={disabled}
         {...field("reward_title")}
       />
@@ -155,6 +161,7 @@ const RewardFields = ({ field, rewardType, disabled }) => (
         type="number"
         min="0"
         step="any"
+        error={errors.reward_value?.message}
         disabled={disabled}
         {...field("reward_value")}
       />
@@ -164,6 +171,7 @@ const RewardFields = ({ field, rewardType, disabled }) => (
         type="number"
         min="1"
         step="1"
+        error={errors.voucher_validity_days?.message}
         disabled={disabled}
         {...field("voucher_validity_days")}
       />
@@ -201,10 +209,6 @@ export const LoyaltyProgramForm = ({
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [error, setError] = useState("");
 
-  const [purchaseMode, setPurchaseMode] = useState(
-    initialValues.tiers?.length ? "tiers" : "simple",
-  );
-
   const [tiers, setTiers] = useState(
     initialValues.tiers?.length
       ? initialValues.tiers
@@ -221,17 +225,32 @@ export const LoyaltyProgramForm = ({
     register,
     handleSubmit,
     watch,
-    setValue,
     formState: { errors },
   } = useForm({
-    resolver: zodResolver(loyaltyProgramSchema),
+    // Validate with the schema for the selected earning type.
+    resolver: (values, context, options) =>
+      zodResolver(getLoyaltyProgramSchema(values.earning_type))(
+        values,
+        context,
+        options,
+      ),
     defaultValues: {
       name: initialValues.name || "",
       description: initialValues.description || "",
       earning_type: initialValues.earning_type || "visit",
+      purchase_mode: initialValues.tiers?.length ? "tiers" : "simple",
       threshold: initialValues.threshold ?? 1,
       stamps_awarded: initialValues.stamps_awarded ?? 1,
       daily_stamp_limit: initialValues.daily_stamp_limit ?? "",
+      stamps_required:
+        initialValues.stamps_required ??
+        initialValues.reward?.stamps_required ??
+        10,
+      // Vouchers are opt-in: unticked unless the program already issues them.
+      issues_voucher:
+        initialValues.issues_voucher ??
+        initialValues.versions?.[0]?.issues_voucher ??
+        false,
       reward_title: initialValues.reward_title || "",
       reward_description: initialValues.reward_description || "",
       reward_type: initialValues.reward_type || "free_item",
@@ -241,7 +260,9 @@ export const LoyaltyProgramForm = ({
   });
 
   const earningType = watch("earning_type");
+  const purchaseMode = watch("purchase_mode");
   const rewardType = watch("reward_type");
+  const issuesVoucher = Boolean(watch("issues_voucher"));
 
   useEffect(() => {
     let ignore = false;
@@ -335,84 +356,55 @@ export const LoyaltyProgramForm = ({
 
   const fail = (msg) => {
     setError(msg);
-    return false;
   };
 
+  // `src` is already validated and coerced by the schema.
   const rewardPayload = (src) => ({
     reward_title: src.reward_title.trim(),
     reward_description: text(src.reward_description),
     reward_type: src.reward_type || "free_item",
-    reward_value: num(src.reward_value),
-    voucher_validity_days: Number(src.voucher_validity_days) || 30,
+    reward_value: src.reward_value ?? null,
+    voucher_validity_days: src.voucher_validity_days,
   });
 
-  const validateThreshold = (d, label) => {
-    if (!d.threshold || Number(d.threshold) <= 0)
-      return fail(`Enter a ${label} greater than 0.`);
-
-    if (!d.stamps_awarded || Number(d.stamps_awarded) < 1)
-      return fail("Stamps awarded must be at least 1.");
-
-    return true;
-  };
-
+  // Runs only after the program schema has passed, so `d` holds clean values.
   const submit = (d) => {
     setError("");
 
     const payload = {
-      name: d.name.trim(),
+      name: d.name,
       description: text(d.description),
       earning_type: d.earning_type,
-      daily_stamp_limit: num(d.daily_stamp_limit),
+      daily_stamp_limit: d.daily_stamp_limit ?? null,
+      issues_voucher: d.issues_voucher,
     };
 
-    if (d.earning_type !== "quantity") {
-      if (!d.reward_title?.trim()) {
-        return fail("Enter a reward title.");
-      }
-
+    // Visit and purchase programs share one reward. It is only sent when
+    // vouchers are on; the backend fills in defaults otherwise.
+    if (d.earning_type !== "quantity" && d.issues_voucher) {
       Object.assign(payload, rewardPayload(d));
     }
 
     if (d.earning_type === "visit") {
-      if (!validateThreshold(d, "visit count")) return;
-
-      payload.threshold = Number(d.threshold);
-      payload.stamps_awarded = Number(d.stamps_awarded);
+      payload.threshold = d.threshold;
+      payload.stamps_awarded = d.stamps_awarded;
     }
 
     if (d.earning_type === "purchase") {
-      if (purchaseMode === "simple") {
-        if (!validateThreshold(d, "minimum spend")) return;
+      payload.stamps_required = d.stamps_required;
 
-        payload.threshold = Number(d.threshold);
-        payload.stamps_awarded = Number(d.stamps_awarded);
+      if (d.purchase_mode === "simple") {
+        payload.threshold = d.threshold;
+        payload.stamps_awarded = d.stamps_awarded;
       } else {
-        for (let i = 0; i < tiers.length; i++) {
-          const t = tiers[i];
-          const n = `Tier ${i + 1}`;
+        const parsed = tiersSchema.safeParse(tiers);
+        if (!parsed.success)
+          return fail(formatSchemaError(parsed.error, "Tier"));
 
-          if (!t.min_amount || Number(t.min_amount) <= 0)
-            return fail(`${n}: minimum spend must be greater than 0.`);
-
-          if (
-            t.max_amount !== "" &&
-            t.max_amount !== null &&
-            Number(t.max_amount) <= Number(t.min_amount)
-          ) {
-            return fail(
-              `${n}: maximum spend must be greater than minimum spend.`,
-            );
-          }
-
-          if (!t.stamps_awarded || Number(t.stamps_awarded) < 1)
-            return fail(`${n}: stamps awarded must be at least 1.`);
-        }
-
-        payload.tiers = tiers.map((t) => ({
-          min_amount: Number(t.min_amount),
-          max_amount: num(t.max_amount),
-          stamps_awarded: Number(t.stamps_awarded),
+        payload.tiers = parsed.data.map((t) => ({
+          min_amount: t.min_amount,
+          max_amount: t.max_amount ?? null,
+          stamps_awarded: t.stamps_awarded,
         }));
       }
     }
@@ -424,33 +416,13 @@ export const LoyaltyProgramForm = ({
         );
       }
 
-      const seen = new Set();
+      const parsed = getProductRulesSchema(d.issues_voucher).safeParse(rules);
+      if (!parsed.success) return fail(formatSchemaError(parsed.error, "Rule"));
 
-      for (let i = 0; i < rules.length; i++) {
-        const r = rules[i];
-        const n = `Rule ${i + 1}`;
-
-        if (!r.product_id) return fail(`${n}: choose a product.`);
-
-        if (seen.has(Number(r.product_id))) {
-          return fail(`${n}: each product can only be used once.`);
-        }
-
-        seen.add(Number(r.product_id));
-
-        if (!r.quantity_required || Number(r.quantity_required) < 1)
-          return fail(`${n}: quantity must be at least 1.`);
-
-        if (!r.reward_title?.trim()) return fail(`${n}: enter a reward title.`);
-
-        if (!r.voucher_validity_days || Number(r.voucher_validity_days) < 1)
-          return fail(`${n}: validity must be at least 1 day.`);
-      }
-
-      payload.product_rules = rules.map((r) => ({
-        product_id: Number(r.product_id),
-        quantity_required: Number(r.quantity_required),
-        ...rewardPayload(r),
+      payload.product_rules = parsed.data.map((r) => ({
+        product_id: r.product_id,
+        quantity_required: r.quantity_required,
+        ...(d.issues_voucher ? rewardPayload(r) : {}),
       }));
     }
 
@@ -505,13 +477,8 @@ export const LoyaltyProgramForm = ({
         <div className="space-y-1">
           <Select
             label="Earning type"
-            value={earningType}
-            onChange={(e) =>
-              setValue("earning_type", e.target.value, {
-                shouldDirty: true,
-              })
-            }
             disabled={isSubmitting}
+            {...register("earning_type")}
           >
             {EARNING_TYPES.map((t) => (
               <option key={t.value} value={t.value}>
@@ -521,8 +488,6 @@ export const LoyaltyProgramForm = ({
           </Select>
 
           <p className="text-xs text-ink-soft">{activeType?.hint}</p>
-
-          <input type="hidden" {...register("earning_type")} />
         </div>
 
         {earningType === "visit" && (
@@ -553,9 +518,8 @@ export const LoyaltyProgramForm = ({
           <div className="space-y-3">
             <Select
               label="Calculation"
-              value={purchaseMode}
-              onChange={(e) => setPurchaseMode(e.target.value)}
               disabled={isSubmitting}
+              {...register("purchase_mode")}
             >
               <option value="simple">Minimum spend</option>
               <option value="tiers">Spend tiers</option>
@@ -651,6 +615,23 @@ export const LoyaltyProgramForm = ({
                 </Button>
               </div>
             )}
+
+            <div className="pt-2 border-t border-blush-100">
+              <Input
+                label="Stamps required to earn reward"
+                type="number"
+                min="1"
+                step="1"
+                placeholder="e.g. 10"
+                error={errors.stamps_required?.message}
+                disabled={isSubmitting}
+                {...register("stamps_required")}
+              />
+              <p className="mt-1 text-xs text-ink-soft">
+                Total stamps a customer must accumulate across qualifying
+                purchases to complete this reward.
+              </p>
+            </div>
           </div>
         )}
 
@@ -719,14 +700,17 @@ export const LoyaltyProgramForm = ({
                     />
                   </div>
 
-                  <RewardFields
-                    rewardType={rule.reward_type}
-                    disabled={isSubmitting}
-                    field={(n) => ({
-                      value: rule[n] ?? "",
-                      onChange: (e) => updateRule(i, n, e.target.value),
-                    })}
-                  />
+                  {/* Per-product reward details only matter when vouchers are on */}
+                  {issuesVoucher && (
+                    <RewardFields
+                      rewardType={rule.reward_type}
+                      disabled={isSubmitting}
+                      field={(n) => ({
+                        value: rule[n] ?? "",
+                        onChange: (e) => updateRule(i, n, e.target.value),
+                      })}
+                    />
+                  )}
                 </div>
               ))}
 
@@ -744,13 +728,40 @@ export const LoyaltyProgramForm = ({
           ))}
       </Section>
 
-      {/* Reward */}
+      {/* Voucher Issuance (before Reward, since it controls whether Reward shows) */}
 
-      {earningType !== "quantity" && (
+      <Section
+        title="Voucher issuance"
+        description="Control whether completed rewards automatically create digital vouchers."
+      >
+        <label className="flex items-start gap-3 rounded-xl border border-blush-200 bg-white p-4 cursor-pointer hover:border-brand-800/40 transition">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 rounded border-blush-200 text-brand-800 focus:ring-brand-800"
+            disabled={isSubmitting}
+            {...register("issues_voucher")}
+          />
+          <div>
+            <span className="text-sm font-bold text-ink">
+              Automatically issue vouchers
+            </span>
+            <p className="mt-0.5 text-xs text-ink-soft leading-relaxed">
+              When customers complete a reward, automatically generate a voucher
+              they can redeem. When disabled, customers can still complete the
+              loyalty requirement, but no voucher is generated.
+            </p>
+          </div>
+        </label>
+      </Section>
+
+      {/* Reward (visit and purchase only, and only when vouchers are on) */}
+
+      {earningType !== "quantity" && issuesVoucher && (
         <Section title="Reward">
           <RewardFields
             field={register}
             rewardType={rewardType}
+            errors={errors}
             disabled={isSubmitting}
           />
         </Section>
