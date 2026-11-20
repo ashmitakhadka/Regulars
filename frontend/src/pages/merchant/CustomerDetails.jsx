@@ -3,9 +3,7 @@ import { useParams } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faEnvelope,
-  faHashtag,
   faPhone,
-  faStamp,
 } from "@fortawesome/free-solid-svg-icons";
 
 import { MerchantSidebar } from "../../components/merchant/MerchantSidebar";

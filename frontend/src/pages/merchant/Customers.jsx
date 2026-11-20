@@ -5,8 +5,6 @@ import {
   faUsers,
   faUserPlus,
   faSearch,
-  faStamp,
-  faArrowRight,
   faFire,
 } from "@fortawesome/free-solid-svg-icons";
 import { MerchantSidebar } from "../../components/merchant/MerchantSidebar";

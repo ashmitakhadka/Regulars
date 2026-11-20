@@ -19,6 +19,7 @@ import {
   ErrorState,
   Spinner,
   Card,
+  Tag,
 } from "../../components/ui";
 import { productService } from "../../services/productService";
 
@@ -237,17 +238,21 @@ export const Products = () => {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                {filters.map((filter) => (
-                  <Button
-                    key={filter.id}
-                    type="button"
-                    size="xs"
-                    variant="soft"
-                    onClick={() => setStatusFilter(filter.id)}
-                  >
-                    {filter.label}
-                  </Button>
-                ))}
+                {filters.map((filter) => {
+                  const selected = statusFilter === filter.id;
+
+                  return (
+                    <Button
+                      key={filter.id}
+                      type="button"
+                      size="sm"
+                      variant={selected ? "primary" : "outline"}
+                      onClick={() => setStatusFilter(filter.id)}
+                    >
+                      {filter.label} ({filter.count})
+                    </Button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -327,8 +332,6 @@ export const Products = () => {
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {filteredProducts.map((product) => {
-                    const isActive = product.status === "active";
-
                     return (
                       <Card
                         key={product.id}
