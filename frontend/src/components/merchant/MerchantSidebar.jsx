@@ -10,7 +10,6 @@ import {
   faUsers,
   faQrcode,
   faTicket,
-  faBullhorn,
   faGear,
   faRightFromBracket,
   faBars,
