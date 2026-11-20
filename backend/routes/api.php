@@ -51,7 +51,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/merchant/products/{id}', [MerchantProductController::class, 'deleteProduct']);
 
     // Voucher Redemption
-    Route::post('/merchant/vouchers/redeem',  [MerchantVoucherController::class, 'redeemVoucher']);
+    Route::get('/merchant/vouchers/stats',   [MerchantVoucherController::class, 'stats']);
+    Route::get('/merchant/vouchers',         [MerchantVoucherController::class, 'index']);
+    Route::post('/merchant/vouchers/redeem', [MerchantVoucherController::class, 'redeemVoucher']);
 
 });
 

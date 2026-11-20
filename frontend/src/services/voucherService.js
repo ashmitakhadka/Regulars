@@ -29,7 +29,10 @@ export const voucherService = {
     });
     return response.data;
   },
+  getStats: () => api.get("/merchant/vouchers/stats").then((res) => res.data),
+
+  getVouchers: (params = {}) =>
+    api.get("/merchant/vouchers", { params }).then((res) => res.data),
 };
 
 export default voucherService;
-
