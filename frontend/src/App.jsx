@@ -15,6 +15,7 @@ import { MerchantLogin } from "./pages/merchantAuth/merchantLogin";
 import Login from "./pages/customer/Login";
 import Register from "./pages/customer/Register";
 import Join from "./pages/customer/Join";
+import ProgramJoin from "./pages/customer/ProgramJoin";
 import Wallet from "./pages/customer/Wallet";
 import CardDetail from "./pages/customer/CardDetail";
 import Businesses from "./pages/customer/Businesses";
@@ -81,6 +82,7 @@ const router = createBrowserRouter([
       { path: "/login", element: <Login /> },
       { path: "/register", element: <Register /> },
       { path: "/join/:merchantSlug", element: <Join /> },
+      { path: "/businesses/:slug/programs/:id/join", element: <ProgramJoin /> },
 
       // Protected Customer Pages
       {
