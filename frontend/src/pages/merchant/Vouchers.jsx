@@ -131,7 +131,9 @@ export const Vouchers = () => {
   // Vouchers table
   useEffect(() => {
     let ignore = false;
-    setTableLoading(true);
+    queueMicrotask(() => {
+      if (!ignore) setTableLoading(true);
+    });
 
     voucherService
       .getVouchers({
