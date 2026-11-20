@@ -10,7 +10,13 @@ import {
 import { MerchantSidebar } from "../../components/merchant/MerchantSidebar";
 import { EnrollCustomerModal } from "../../components/merchant/customers/EnrollCustomerModal";
 import { AwardStampsModal } from "../../components/merchant/customers/AwardStampsModal";
-import { Button, EmptyState, ErrorState, Spinner } from "../../components/ui";
+import {
+  Button,
+  EmptyState,
+  ErrorState,
+  Spinner,
+  Input,
+} from "../../components/ui";
 import { customerService } from "../../services/customerService";
 
 const LOAD_ERROR =
@@ -101,17 +107,17 @@ export const Customers = () => {
 
         {/* Search */}
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative w-full max-w-md">
+          <div className="relative w-full sm:w-64">
             <FontAwesomeIcon
               icon={faSearch}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-[#23140C]/40"
+              className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-sm text-[#23140C]/40"
             />
-            <input
+            <Input
               type="text"
               placeholder="Search by name, code or phone"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-[#F4F0EA] bg-white py-2 pl-10 pr-4 text-sm text-[#23140C] placeholder:text-[#23140C]/40 transition focus:border-[#23140C]/40 focus:outline-none focus:ring-2 focus:ring-[#23140C]/10"
+              className="w-full pl-10"
             />
           </div>
 
