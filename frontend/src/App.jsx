@@ -17,6 +17,9 @@ import Register from "./pages/customer/Register";
 import Join from "./pages/customer/Join";
 import Wallet from "./pages/customer/Wallet";
 import CardDetail from "./pages/customer/CardDetail";
+import Businesses from "./pages/customer/Businesses";
+import BusinessDetail from "./pages/customer/BusinessDetail";
+import ProgramDetail from "./pages/customer/ProgramDetail";
 import Vouchers from "./pages/customer/Vouchers";
 import VoucherDetail from "./pages/customer/VoucherDetail";
 import Profile from "./pages/customer/Profile";
@@ -89,6 +92,9 @@ const router = createBrowserRouter([
         children: [
           { path: "/wallet", element: <Wallet /> },
           { path: "/wallet/:cardId", element: <CardDetail /> },
+          { path: "/businesses", element: <Businesses /> },
+          { path: "/businesses/:slug", element: <BusinessDetail /> },
+          { path: "/businesses/:slug/programs/:id", element: <ProgramDetail /> },
           { path: "/vouchers", element: <Vouchers /> },
           { path: "/vouchers/:id", element: <VoucherDetail /> },
           { path: "/profile", element: <Profile /> },

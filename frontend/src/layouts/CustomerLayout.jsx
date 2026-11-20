@@ -2,6 +2,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faWallet,
+  faStore,
   faTicket,
   faUser,
   faArrowRightFromBracket,
@@ -11,6 +12,7 @@ import { useCustomerAuth } from "../auth/CustomerAuthContext";
 
 const navItems = [
   { to: "/wallet", label: "Wallet", icon: faWallet },
+  { to: "/businesses", label: "Businesses", icon: faStore },
   { to: "/vouchers", label: "Vouchers", icon: faTicket },
   { to: "/profile", label: "Profile", icon: faUser },
 ];
@@ -77,7 +79,7 @@ export const CustomerLayout = () => {
         aria-label="Mobile bottom navigation"
         className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-blush-200 sm:hidden shadow-[0_-2px_10px_rgba(43,17,20,0.04)]"
       >
-        <div className="grid h-16 grid-cols-3 max-w-md mx-auto">
+        <div className="grid h-16 grid-cols-4 max-w-md mx-auto">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
@@ -90,8 +92,8 @@ export const CustomerLayout = () => {
                 }`
               }
             >
-              <FontAwesomeIcon icon={item.icon} className="text-lg mb-1" />
-              <span className="text-xs">{item.label}</span>
+              <FontAwesomeIcon icon={item.icon} className="text-base sm:text-lg mb-0.5" />
+              <span className="text-[11px] sm:text-xs truncate max-w-full px-1">{item.label}</span>
             </NavLink>
           ))}
         </div>
