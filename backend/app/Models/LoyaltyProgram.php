@@ -27,16 +27,8 @@ class LoyaltyProgram extends Model
     {
         return $this->hasMany(LoyaltyProgramVersion::class);
     }
-<<<<<<< HEAD
-
-    public function stampCards(): HasMany
-    {
-        return $this->hasMany(StampCard::class);
-    }
-=======
     public function stampCards(): HasMany
 {
     return $this->hasMany(StampCard::class);
 }
->>>>>>> 1b56a53f0b88b9f57d87db9ec8e675680171c922
 }
