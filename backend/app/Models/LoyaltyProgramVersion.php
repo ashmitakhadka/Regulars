@@ -9,18 +9,20 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class LoyaltyProgramVersion extends Model
 {
     protected $fillable = [
-        'loyalty_program_id',
-        'version_number',
-        'status',
-        'effective_at',
-    ];
+    'loyalty_program_id',
+    'version_number',
+    'status',
+    'effective_at',
+    'issues_voucher',
+];
 
-    protected function casts(): array
-    {
-        return [
-            'effective_at' => 'datetime',
-        ];
-    }
+protected function casts(): array
+{
+    return [
+        'effective_at' => 'datetime',
+        'issues_voucher' => 'boolean',
+    ];
+}
 
     public function loyaltyProgram(): BelongsTo
     {

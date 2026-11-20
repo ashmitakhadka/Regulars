@@ -14,6 +14,7 @@ class Reward extends Model
         'description',
         'reward_type',
         'reward_value',
+        'stamps_required',
         'voucher_validity_days',
     ];
 
@@ -21,6 +22,7 @@ class Reward extends Model
     {
         return [
             'reward_value' => 'decimal:2',
+            'stamps_required' => 'integer',
         ];
     }
 
