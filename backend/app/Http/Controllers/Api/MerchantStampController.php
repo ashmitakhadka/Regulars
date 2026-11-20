@@ -44,18 +44,13 @@ class MerchantStampController extends Controller
                 'loyaltyProgram',
                 'programVersion',
                 'programVersion.earningRule',
+                'programVersion.reward',
             ])->lockForUpdate()->findOrFail($validated['stamp_card_id']);
 
             if ((int) $card->loyaltyProgram->merchant_id !== (int) $merchant->id) {
                 return response()->json([
                     'message' => 'This customer does not belong to your loyalty program.',
                 ], 403);
-            }
-
-            if ($card->status !== 'active') {
-                return response()->json([
-                    'message' => 'This stamp card is not active.',
-                ], 422);
             }
 
             // Prevent duplicate requests.
@@ -65,10 +60,20 @@ class MerchantStampController extends Controller
             )->first();
 
             if ($existingTransaction) {
+                $existingVouchers = Voucher::where('stamp_transaction_id', $existingTransaction->id)->get();
+
                 return response()->json([
                     'message' => 'This stamp award has already been processed.',
                     'transaction' => $existingTransaction,
+                    'vouchers' => $existingVouchers,
+                    'vouchers_issued' => $existingVouchers->count(),
                 ], 200);
+            }
+
+            if ($card->status !== 'active') {
+                return response()->json([
+                    'message' => 'This stamp card is not active.',
+                ], 422);
             }
 
             $earningRule = $card->programVersion->earningRule;
@@ -88,10 +93,14 @@ class MerchantStampController extends Controller
             $selectedTier = null;
             $selectedProductRule = null;
             $vouchersIssued = [];
+            $isRewardCompleted = false;
+            $rewardsCompleted = 0;
 
             $requiredQuantity = null;
             $newTotalQuantity = null;
+            $todayQuantity = null;
             $vouchersToIssue = 0;
+            $reward = null;
 
             /*
             |--------------------------------------------------------------------------
@@ -115,6 +124,20 @@ class MerchantStampController extends Controller
                             'message' => 'The customer has reached the daily stamp limit.',
                         ], 422);
                     }
+                }
+
+                $reward = $card->programVersion->reward;
+
+                // Count existing qualifying visits (each recorded merchant_award transaction = 1 visit)
+                $qualifyingVisits = StampTransaction::where('stamp_card_id', $card->id)
+                    ->where('program_version_id', $card->program_version_id)
+                    ->where('source_type', 'merchant_award')
+                    ->count() + 1; // including the visit being awarded now
+
+                $requiredVisits = (int) $earningRule->threshold;
+                if ($requiredVisits > 0 && $qualifyingVisits >= $requiredVisits) {
+                    $isRewardCompleted = true;
+                    $rewardsCompleted = 1;
                 }
             }
 
@@ -194,6 +217,14 @@ class MerchantStampController extends Controller
                         }
                     }
                 }
+
+                $reward = $card->programVersion->reward;
+                $stampsRequired = (int) ($reward?->stamps_required ?? $earningRule->threshold ?? 1);
+
+                if ($stampsRequired > 0 && ($card->stamps_earned + $stampsToAward) >= $stampsRequired) {
+                    $isRewardCompleted = true;
+                    $rewardsCompleted = 1;
+                }
             }
 
             /*
@@ -243,7 +274,7 @@ class MerchantStampController extends Controller
                     ], 422);
                 }
 
-                $quantity = $validated['quantity'];
+                $quantity = (int) $validated['quantity'];
                 $requiredQuantity = (int) $selectedProductRule->quantity_required;
 
                 if ($requiredQuantity < 1) {
@@ -252,7 +283,7 @@ class MerchantStampController extends Controller
                     ], 422);
                 }
 
-                // Check the optional program-wide daily stamp limit.
+                // Check the program-wide daily stamp limit per local day
                 if ($earningRule->daily_stamp_limit !== null) {
 
                     $todayStamps = StampTransaction::where('stamp_card_id', $card->id)
@@ -267,27 +298,39 @@ class MerchantStampController extends Controller
                     }
                 }
 
-                // Calculate this product's existing progress today.
-                $previousQuantity = StampTransaction::where('stamp_card_id', $card->id)
+                // Cumulative progress across all days for this product rule & version
+                $previousCumulativeQuantity = StampTransaction::where('stamp_card_id', $card->id)
+                    ->where('program_version_id', $card->program_version_id)
+                    ->where('earning_rule_product_id', $selectedProductRule->id)
+                    ->sum('stamps_awarded');
+
+                $newTotalQuantity = (int) $previousCumulativeQuantity + $quantity;
+
+                // Today's progress for this product rule
+                $todayPrevious = StampTransaction::where('stamp_card_id', $card->id)
                     ->where('program_version_id', $card->program_version_id)
                     ->where('earning_rule_product_id', $selectedProductRule->id)
                     ->whereBetween('created_at', [$todayStart, $todayEnd])
                     ->sum('stamps_awarded');
+                $todayQuantity = (int) $todayPrevious + $quantity;
 
-                $newTotalQuantity = (int) $previousQuantity + $quantity;
+                // Calculate rewards earned historically across all days
+                $totalRewardsEarned = intdiv($newTotalQuantity, $requiredQuantity);
+                $previousRewardsEarned = intdiv((int) $previousCumulativeQuantity, $requiredQuantity);
+                $rewardsCompleted = max(0, $totalRewardsEarned - $previousRewardsEarned);
 
-                // Calculate how many new rewards have been earned.
-                $previousRewards = intdiv(
-                    (int) $previousQuantity,
-                    $requiredQuantity
-                );
+                if ($rewardsCompleted > 0) {
+                    $isRewardCompleted = true;
+                }
 
-                $newRewards = intdiv(
-                    $newTotalQuantity,
-                    $requiredQuantity
-                );
+                // Strict deduplication per reward completion:
+                // Count vouchers already issued for this exact card and reward
+                $alreadyIssuedVouchersCount = Voucher::where('stamp_card_id', $card->id)
+                    ->where('reward_id', $reward->id)
+                    ->count();
 
-                $vouchersToIssue = $newRewards - $previousRewards;
+                // Number of vouchers to issue is strictly the difference between total rewards earned and already issued
+                $vouchersToIssue = max(0, $totalRewardsEarned - $alreadyIssuedVouchersCount);
 
                 $stampsToAward = $quantity;
             }
@@ -328,28 +371,84 @@ class MerchantStampController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Issue quantity-based vouchers
+            | Stamp Card Completion (Visit and Purchase)
             |--------------------------------------------------------------------------
             */
 
+            if (in_array($earningRule->earning_type, ['visit', 'purchase']) && $isRewardCompleted) {
+                $card->update([
+                    'status' => 'completed',
+                    'completed_at' => now($timezone)->utc(),
+                ]);
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Issue Vouchers when issues_voucher = true
+            |--------------------------------------------------------------------------
+            */
+
+            $issuesVoucher = (bool) ($card->programVersion->issues_voucher ?? true);
+
+            // 1. Visit and Purchase Voucher Issuance
             if (
-                $earningRule->earning_type === 'quantity'
-                && $vouchersToIssue > 0
+                in_array($earningRule->earning_type, ['visit', 'purchase'])
+                && $isRewardCompleted
+                && $issuesVoucher
+                && $reward
             ) {
+                // Ensure no voucher has already been issued for this card and reward
+                $alreadyHasVoucher = Voucher::where('stamp_card_id', $card->id)
+                    ->where('reward_id', $reward->id)
+                    ->exists();
 
-                $issuedAt = now($timezone)->utc();
-
-                $expiresAt = $issuedAt->copy()->addDays(
-                    $reward->voucher_validity_days ?? 30
-                );
-
-                for ($i = 0; $i < $vouchersToIssue; $i++) {
+                if (!$alreadyHasVoucher) {
+                    $issuedAt = now($timezone)->utc();
+                    $expiresAt = $issuedAt->copy()->addDays(
+                        $reward->voucher_validity_days ?? 30
+                    );
 
                     $voucher = Voucher::create([
                         'merchant_id' => $merchant->id,
                         'customer_id' => $card->customer_id,
                         'stamp_card_id' => $card->id,
                         'reward_id' => $reward->id,
+                        'stamp_transaction_id' => $transaction->id,
+                        'code' => $this->generateVoucherCode(),
+                        'source_type' => $earningRule->earning_type . '_reward',
+                        'reward_title' => $reward->title,
+                        'reward_description' => $reward->description,
+                        'reward_type' => $reward->reward_type,
+                        'reward_value' => $reward->reward_value,
+                        'currency' => $merchant->currency ?? 'NPR',
+                        'status' => 'active',
+                        'issued_at' => $issuedAt,
+                        'expires_at' => $expiresAt,
+                    ]);
+
+                    $vouchersIssued[] = $voucher;
+                }
+            }
+
+            // 2. Quantity-based Voucher Issuance (per reward completion deduplicated)
+            elseif (
+                $earningRule->earning_type === 'quantity'
+                && $vouchersToIssue > 0
+                && $issuesVoucher
+                && $reward
+            ) {
+                $issuedAt = now($timezone)->utc();
+                $expiresAt = $issuedAt->copy()->addDays(
+                    $reward->voucher_validity_days ?? 30
+                );
+
+                for ($i = 0; $i < $vouchersToIssue; $i++) {
+                    $voucher = Voucher::create([
+                        'merchant_id' => $merchant->id,
+                        'customer_id' => $card->customer_id,
+                        'stamp_card_id' => $card->id,
+                        'reward_id' => $reward->id,
+                        'stamp_transaction_id' => $transaction->id,
                         'code' => $this->generateVoucherCode(),
                         'source_type' => 'quantity_reward',
                         'reward_title' => $reward->title,
@@ -375,7 +474,6 @@ class MerchantStampController extends Controller
             $remainingQuantity = null;
 
             if ($earningRule->earning_type === 'quantity') {
-
                 $remainder = $newTotalQuantity % $requiredQuantity;
 
                 $remainingQuantity = $remainder === 0
@@ -394,13 +492,18 @@ class MerchantStampController extends Controller
                 'earning_type' => $earningRule->earning_type,
                 'stamps_awarded' => $stampsToAward,
                 'total_stamps' => $card->stamps_earned,
+                'card_status' => $card->status,
+                'reward_completed' => $isRewardCompleted,
+                'rewards_completed' => $rewardsCompleted,
                 'quantity_progress' => $earningRule->earning_type === 'quantity'
                     ? [
                         'product_id' => $validated['product_id'],
                         'quantity_awarded' => $stampsToAward,
                         'quantity_required' => $requiredQuantity,
-                        'today_quantity' => $newTotalQuantity,
+                        'cumulative_quantity' => $newTotalQuantity,
+                        'today_quantity' => $todayQuantity,
                         'remaining_quantity' => $remainingQuantity,
+                        'rewards_completed' => $rewardsCompleted,
                     ]
                     : null,
                 'vouchers_issued' => count($vouchersIssued),
