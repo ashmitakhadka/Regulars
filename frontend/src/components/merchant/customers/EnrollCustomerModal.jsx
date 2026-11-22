@@ -18,7 +18,12 @@ const EMPTY = {
 const fieldClass =
   "w-full rounded-lg border border-blush-200 bg-white px-3 py-2 text-sm text-ink transition focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-ink/10 disabled:opacity-60";
 
-export const EnrollCustomerModal = ({ isOpen, onClose, onEnrolled }) => {
+export const EnrollCustomerModal = ({
+  isOpen,
+  onClose,
+  onEnrolled,
+  programId = null,
+}) => {
   const [programs, setPrograms] = useState([]);
   const [loadingPrograms, setLoadingPrograms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -31,7 +36,10 @@ export const EnrollCustomerModal = ({ isOpen, onClose, onEnrolled }) => {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(enrollCustomerSchema),
-    defaultValues: EMPTY,
+    defaultValues: {
+      ...EMPTY,
+      loyalty_program_id: programId ? Number(programId) : "",
+    },
   });
 
   const isCode = watch("identifier_type") === "customer_code";
@@ -39,6 +47,16 @@ export const EnrollCustomerModal = ({ isOpen, onClose, onEnrolled }) => {
   useEffect(() => {
     if (!isOpen) return;
     let ignore = false;
+
+    if (programId) {
+      reset({
+        ...EMPTY,
+        loyalty_program_id: Number(programId),
+      });
+      setPrograms([]);
+      setLoadingPrograms(false);
+      return;
+    }
 
     reset(EMPTY);
     setLoadingPrograms(true);
@@ -61,7 +79,7 @@ export const EnrollCustomerModal = ({ isOpen, onClose, onEnrolled }) => {
     return () => {
       ignore = true;
     };
-  }, [isOpen, reset]);
+  }, [isOpen, programId, reset]);
 
   if (!isOpen) return null;
 
@@ -162,44 +180,48 @@ export const EnrollCustomerModal = ({ isOpen, onClose, onEnrolled }) => {
             {...register("identifier")}
           />
 
-          <div>
-            <label
-              htmlFor="loyalty_program_id"
-              className="mb-1.5 block text-sm font-semibold text-ink"
-            >
-              Loyalty program
-            </label>
-
-            {loadingPrograms ? (
-              <div className="flex items-center gap-2 py-2 text-sm text-ink-soft">
-                <Spinner size="sm" />
-                <span>Loading programs…</span>
-              </div>
-            ) : programs.length === 0 ? (
-              <p className="text-sm text-red-600">
-                No active programs. Create or activate one first.
-              </p>
-            ) : (
-              <select
-                id="loyalty_program_id"
-                disabled={isSubmitting}
-                className={fieldClass}
-                {...register("loyalty_program_id")}
+          {!programId ? (
+            <div>
+              <label
+                htmlFor="loyalty_program_id"
+                className="mb-1.5 block text-sm font-semibold text-ink"
               >
-                {programs.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            )}
+                Loyalty program
+              </label>
 
-            {errors.loyalty_program_id && (
-              <p className="mt-1 text-xs font-medium text-red-600">
-                {errors.loyalty_program_id.message}
-              </p>
-            )}
-          </div>
+              {loadingPrograms ? (
+                <div className="flex items-center gap-2 py-2 text-sm text-ink-soft">
+                  <Spinner size="sm" />
+                  <span>Loading programs…</span>
+                </div>
+              ) : programs.length === 0 ? (
+                <p className="text-sm text-red-600">
+                  No active programs. Create or activate one first.
+                </p>
+              ) : (
+                <select
+                  id="loyalty_program_id"
+                  disabled={isSubmitting}
+                  className={fieldClass}
+                  {...register("loyalty_program_id")}
+                >
+                  {programs.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              {errors.loyalty_program_id && (
+                <p className="mt-1 text-xs font-medium text-red-600">
+                  {errors.loyalty_program_id.message}
+                </p>
+              )}
+            </div>
+          ) : (
+            <input type="hidden" {...register("loyalty_program_id")} />
+          )}
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-2.5 pt-2">
             <Button
@@ -217,7 +239,9 @@ export const EnrollCustomerModal = ({ isOpen, onClose, onEnrolled }) => {
               variant="primary"
               size="sm"
               loading={isSubmitting}
-              disabled={isSubmitting || programs.length === 0}
+              disabled={
+                isSubmitting || (!programId && programs.length === 0)
+              }
               className="w-full sm:w-auto"
             >
               Enroll

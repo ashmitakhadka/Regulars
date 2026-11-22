@@ -276,24 +276,40 @@ const AwardStampsModalContent = ({
               </p>
             ) : (
               <>
-                <Field label="Loyalty program" htmlFor="select-stamp-card">
-                  <select
-                    id="select-stamp-card"
-                    value={selectedCardId}
-                    onChange={(e) => handleCardChange(e.target.value)}
-                    disabled={isSubmitting || loadingProgram}
-                    className={fieldClass}
-                  >
-                    {activeCards.map((card) => (
-                      <option
-                        key={card.stamp_card_id}
-                        value={card.stamp_card_id}
-                      >
-                        {card.program_name} ({card.stamps_earned} stamps)
-                      </option>
-                    ))}
-                  </select>
-                </Field>
+                {activeCards.length > 1 && !initialCardId ? (
+                  <Field label="Loyalty program" htmlFor="select-stamp-card">
+                    <select
+                      id="select-stamp-card"
+                      value={selectedCardId}
+                      onChange={(e) => handleCardChange(e.target.value)}
+                      disabled={isSubmitting || loadingProgram}
+                      className={fieldClass}
+                    >
+                      {activeCards.map((card) => (
+                        <option
+                          key={card.stamp_card_id}
+                          value={card.stamp_card_id}
+                        >
+                          {card.program_name} ({card.stamps_earned} stamps)
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                ) : (
+                  <div>
+                    <span className="mb-1.5 block text-sm font-semibold text-ink">
+                      Loyalty program
+                    </span>
+                    <div className="flex items-center justify-between rounded-lg border border-blush-200 bg-[#F4F0EA]/30 px-3 py-2 text-sm text-ink">
+                      <span className="font-medium text-[#23140C]">
+                        {defaultCard?.program_name || "Loyalty Program"}
+                      </span>
+                      <span className="text-xs text-ink-soft">
+                        {defaultCard?.stamps_earned ?? 0} stamps
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 {loadingProgram ? (
                   <div className="flex items-center gap-2 py-2 text-sm text-ink-soft">
