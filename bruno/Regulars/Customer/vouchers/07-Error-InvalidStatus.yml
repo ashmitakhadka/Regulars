@@ -1,0 +1,16 @@
+info:
+  name: 07 Error - Invalid Status (422)
+  type: http
+  seq: 7
+
+http:
+  method: GET
+  url: http://localhost:8000/api/customer/vouchers?status=invalid_status
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
