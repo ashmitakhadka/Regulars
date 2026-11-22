@@ -41,16 +41,21 @@ class MerchantCustomerController extends Controller
         $validated = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'program_id' => ['nullable', 'integer'],
         ]);
 
         $perPage = $validated['per_page'] ?? 15;
+        $programId = $validated['program_id'] ?? null;
 
         // Retrieve customers who have joined this merchant's programs.
         $customers = User::query()
             ->where('role', 'customer')
-            ->whereHas('stampCards', function ($query) use ($merchant) {
+            ->whereHas('stampCards', function ($query) use ($merchant, $programId) {
                 $query->whereHas('loyaltyProgram', function ($programQuery) use ($merchant) {
                     $programQuery->where('merchant_id', $merchant->id);
+                })
+                ->when($programId, function ($pq) use ($programId) {
+                    $pq->where('loyalty_program_id', $programId);
                 });
             })
             // Search by customer details.
@@ -64,10 +69,15 @@ class MerchantCustomerController extends Controller
             })
             // Load only this merchant's stamp cards and statistics.
             ->with([
-                'stampCards' => function ($query) use ($merchant) {
+                'stampCards' => function ($query) use ($merchant, $programId) {
                     $query->whereHas('loyaltyProgram', function ($programQuery) use ($merchant) {
                         $programQuery->where('merchant_id', $merchant->id);
-                    })->with('loyaltyProgram:id,name');
+                    })
+                    ->when($programId, function ($pq) use ($programId) {
+                        $pq->where('loyalty_program_id', $programId);
+                    })
+                    ->with('loyaltyProgram:id,name')
+                    ->orderByDesc('id');
                 },
                 'merchantStats' => function ($query) use ($merchant) {
                     $query->where('merchant_id', $merchant->id);
