@@ -165,7 +165,7 @@ const AwardStampsModalContent = ({
       aria-modal="true"
       aria-labelledby="award-modal-title"
     >
-      <div className="w-full max-w-md rounded-2xl border border-blush-200 bg-white p-6 shadow-xl">
+      <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-blush-200 bg-white p-5 sm:p-6 shadow-xl">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2
@@ -276,24 +276,40 @@ const AwardStampsModalContent = ({
               </p>
             ) : (
               <>
-                <Field label="Loyalty program" htmlFor="select-stamp-card">
-                  <select
-                    id="select-stamp-card"
-                    value={selectedCardId}
-                    onChange={(e) => handleCardChange(e.target.value)}
-                    disabled={isSubmitting || loadingProgram}
-                    className={fieldClass}
-                  >
-                    {activeCards.map((card) => (
-                      <option
-                        key={card.stamp_card_id}
-                        value={card.stamp_card_id}
-                      >
-                        {card.program_name} ({card.stamps_earned} stamps)
-                      </option>
-                    ))}
-                  </select>
-                </Field>
+                {activeCards.length > 1 && !initialCardId ? (
+                  <Field label="Loyalty program" htmlFor="select-stamp-card">
+                    <select
+                      id="select-stamp-card"
+                      value={selectedCardId}
+                      onChange={(e) => handleCardChange(e.target.value)}
+                      disabled={isSubmitting || loadingProgram}
+                      className={fieldClass}
+                    >
+                      {activeCards.map((card) => (
+                        <option
+                          key={card.stamp_card_id}
+                          value={card.stamp_card_id}
+                        >
+                          {card.program_name} ({card.stamps_earned} stamps)
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                ) : (
+                  <div>
+                    <span className="mb-1.5 block text-sm font-semibold text-ink">
+                      Loyalty program
+                    </span>
+                    <div className="flex items-center justify-between rounded-lg border border-blush-200 bg-[#F4F0EA]/30 px-3 py-2 text-sm text-ink">
+                      <span className="font-medium text-[#23140C]">
+                        {defaultCard?.program_name || "Loyalty Program"}
+                      </span>
+                      <span className="text-xs text-ink-soft">
+                        {defaultCard?.stamps_earned ?? 0} stamps
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 {loadingProgram ? (
                   <div className="flex items-center gap-2 py-2 text-sm text-ink-soft">
@@ -362,13 +378,14 @@ const AwardStampsModalContent = ({
                   </>
                 )}
 
-                <div className="flex items-center justify-end gap-2 pt-2">
+                <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-2.5 pt-2">
                   <Button
                     type="button"
                     variant="soft"
                     size="sm"
                     onClick={onClose}
                     disabled={isSubmitting}
+                    className="w-full sm:w-auto"
                   >
                     Cancel
                   </Button>
@@ -378,6 +395,7 @@ const AwardStampsModalContent = ({
                     size="sm"
                     loading={isSubmitting}
                     disabled={isSubmitting || loadingProgram || !selectedCardId}
+                    className="w-full sm:w-auto"
                   >
                     Award
                   </Button>

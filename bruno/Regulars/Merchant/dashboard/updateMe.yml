@@ -1,0 +1,35 @@
+info:
+  name: updateMe
+  type: http
+  seq: 3
+
+http:
+  method: PUT
+  url: http://localhost:8000/api/merchant/me
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: http://localhost:5173
+    - name: Referer
+      value: http://localhost:5173
+  body:
+    type: json
+    data: |-
+      {
+        "business_name": "Updated Business Name",
+        "phone": "9841234567",
+        "address": "Lalitpur, Nepal"
+      }
+  auth:
+    type: bearer
+    token: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

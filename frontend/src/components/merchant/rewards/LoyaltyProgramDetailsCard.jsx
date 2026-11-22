@@ -72,7 +72,7 @@ export const LoyaltyProgramDetailsCard = ({ program }) => {
     reward?.reward_value !== null && reward?.reward_value !== undefined;
 
   return (
-    <div className="space-y-8 rounded-2xl bg-white p-6 shadow-[0_2px_12px_rgba(35,20,12,0.06)] sm:p-8">
+    <div className="space-y-8 rounded-2xl bg-white p-5 sm:p-7 lg:p-8 shadow-[0_2px_12px_rgba(35,20,12,0.06)]">
       {/* Overview (the page title already shows the name) */}
       <header>
         {program.description && (
@@ -94,7 +94,7 @@ export const LoyaltyProgramDetailsCard = ({ program }) => {
       {/* Earning and reward (quantity programs show the Products list instead) */}
       {!isQuantity && (
         <Section title="Earning and reward">
-          <dl className="grid grid-cols-[7rem_1fr] gap-x-4 gap-y-3">
+          <dl className="grid grid-cols-1 gap-y-2 sm:grid-cols-[7rem_1fr] sm:gap-x-4 sm:gap-y-3">
             <Row label="Earn">
               {getEarningSummary(earningRule, tiers)}
             </Row>

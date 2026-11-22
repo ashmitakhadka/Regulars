@@ -20,6 +20,7 @@ import {
   Spinner,
   Card,
   Tag,
+  Input,
 } from "../../components/ui";
 import { productService } from "../../services/productService";
 
@@ -199,23 +200,28 @@ export const Products = () => {
   ];
 
   return (
-    <div className="flex min-h-screen bg-white md:flex-row">
+    <div className="flex min-h-screen flex-col bg-white md:flex-row">
       <MerchantSidebar />
 
-      <main className="min-w-0 flex-1 p-5 sm:p-8">
+      <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
         <div className="mx-auto max-w-7xl">
           {/* Page Header */}
-          <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-[#23140C] sm:text-3xl">
+              <h1 className="text-xl font-bold tracking-tight text-[#23140C] sm:text-2xl lg:text-3xl">
                 Products
               </h1>
             </div>
 
             <div className="flex items-center gap-2">
-              <Button variant="primary" size="sm" onClick={openCreateModal}>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={openCreateModal}
+                className="w-full sm:w-auto"
+              >
                 <FontAwesomeIcon icon={faPlus} />
-                Add Product
+                <span>Add Product</span>
               </Button>
             </div>
           </header>
@@ -223,17 +229,17 @@ export const Products = () => {
           {/* Search and Filters */}
           {!loading && !error && products.length > 0 && (
             <div className="mt-8 flex flex-col gap-4 rounded-xl p-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="relative w-full sm:max-w-sm">
+              <div className="relative w-full sm:w-64">
                 <FontAwesomeIcon
                   icon={faSearch}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-[#23140C]/40"
+                  className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-sm text-[#23140C]/40"
                 />
-                <input
+                <Input
                   type="text"
                   placeholder="Search products..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-lg bg-white py-2.5 pl-10 pr-4 text-sm text-[#23140C] placeholder:text-[#23140C]/40 shadow-sm outline-none ring-1 ring-[#23140C]/5 transition focus:shadow-md focus:ring-2 focus:ring-[#A51D27]/30"
+                  className="w-full pl-10"
                 />
               </div>
 
@@ -245,11 +251,11 @@ export const Products = () => {
                     <Button
                       key={filter.id}
                       type="button"
-                      size="sm"
+                      size="xs"
                       variant={selected ? "primary" : "outline"}
                       onClick={() => setStatusFilter(filter.id)}
                     >
-                      {filter.label} ({filter.count})
+                      {filter.label}
                     </Button>
                   );
                 })}

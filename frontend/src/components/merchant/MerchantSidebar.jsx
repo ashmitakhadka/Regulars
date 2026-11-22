@@ -10,7 +10,6 @@ import {
   faUsers,
   faQrcode,
   faTicket,
-  faBullhorn,
   faGear,
   faRightFromBracket,
   faBars,
@@ -23,12 +22,15 @@ import { Logo } from "../ui";
 
 const navigationItems = [
   { label: "Dashboard", path: "/merchant/dashboard", icon: faGauge },
-  { label: "Loyalty Programs", path: "/merchant/loyalty-programs", icon: faGift },
+  {
+    label: "Loyalty Programs",
+    path: "/merchant/loyalty-programs",
+    icon: faGift,
+  },
   { label: "Products", path: "/merchant/products", icon: faBoxesStacked },
   { label: "Customers", path: "/merchant/customers", icon: faUsers },
   { label: "QR Code", path: "/merchant/qr-code", icon: faQrcode },
   { label: "Vouchers", path: "/merchant/vouchers", icon: faTicket },
-  { label: "Promotions", path: "/merchant/promotions", icon: faBullhorn },
   { label: "Settings", path: "/merchant/settings", icon: faGear },
 ];
 

@@ -777,13 +777,14 @@ export const LoyaltyProgramForm = ({
 
       {/* Actions */}
 
-      <div className="flex items-center justify-end gap-2 pt-2">
+      <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:items-center sm:justify-end sm:gap-3 pt-2">
         {onCancel && (
           <Button
             type="button"
             variant="soft"
             onClick={onCancel}
             disabled={isSubmitting}
+            className="w-full sm:w-auto"
           >
             Cancel
           </Button>
@@ -794,8 +795,9 @@ export const LoyaltyProgramForm = ({
           variant="primary"
           loading={isSubmitting}
           disabled={isSubmitting}
+          className="w-full sm:w-auto"
         >
-          Create
+          <span>Create</span>
           <FontAwesomeIcon icon={faPlus} />
         </Button>
       </div>

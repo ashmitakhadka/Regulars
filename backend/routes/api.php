@@ -16,6 +16,7 @@ Route::post('/login/merchant', [MerchantRegistrationController::class, 'login'])
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/merchant/me',[MerchantDashboardController::class, 'me']);
+    Route::put('/merchant/me',[MerchantDashboardController::class, 'updateMe']);
     Route::get('/merchant/dashboard', [MerchantDashboardController::class, 'index']);
 
     Route::post('/logout/merchant', [MerchantRegistrationController::class, 'logout']);

@@ -38,6 +38,7 @@ import { Customers } from "./pages/merchant/Customers";
 import { CustomerDetails } from "./pages/merchant/CustomerDetails";
 import { Vouchers as MerchantVouchers } from "./pages/merchant/Vouchers";
 import MerchantQrCode from "./components/merchant/MerchantQrCode";
+import Settings from "./pages/merchant/Settings";
 
 const MerchantProtectedRoute = ({ children }) => {
   const { user, merchant, loading } = useAuth();
@@ -179,6 +180,14 @@ const router = createBrowserRouter([
     element: (
       <MerchantProtectedRoute>
         <MerchantVouchers />
+      </MerchantProtectedRoute>
+    ),
+  },
+  {
+    path: "/merchant/settings",
+    element: (
+      <MerchantProtectedRoute>
+        <Settings />
       </MerchantProtectedRoute>
     ),
   },

@@ -1,11 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faGift,
-  faArrowRight,
-  faRotate,
-} from "@fortawesome/free-solid-svg-icons";
+import { faRotate } from "@fortawesome/free-solid-svg-icons";
 import loyaltyProgramService from "../../services/loyaltyProgramService";
 import { Button } from "../../components/ui/Button";
 
