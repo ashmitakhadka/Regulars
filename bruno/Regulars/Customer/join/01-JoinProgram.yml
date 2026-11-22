@@ -1,0 +1,16 @@
+info:
+  name: 01 Join Program
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:8000/api/customer/programs/1/join
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

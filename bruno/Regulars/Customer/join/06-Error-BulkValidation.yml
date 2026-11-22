@@ -1,0 +1,22 @@
+info:
+  name: 06 Error - Bulk Validation (422)
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: http://localhost:8000/api/customer/programs/join
+  body:
+    type: json
+    data: |-
+      {
+        "program_ids": [1, 1]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
