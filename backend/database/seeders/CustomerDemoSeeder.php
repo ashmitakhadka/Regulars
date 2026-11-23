@@ -398,6 +398,26 @@ class CustomerDemoSeeder extends Seeder
             ]
         );
 
+        // 4d. Active Voucher Expiring Soon (expires in 2 days)
+        Voucher::updateOrCreate(
+            ['code' => 'VCH-ACTIVE-EXP2D'],
+            [
+                'merchant_id' => $cafe->id,
+                'customer_id' => $customer->id,
+                'stamp_card_id' => $cafeCard->id,
+                'source_type' => 'stamp_card',
+                'reward_title' => 'Fresh Butter Croissant',
+                'reward_description' => 'One complimentary artisanal butter croissant.',
+                'reward_type' => 'free_item',
+                'reward_value' => 180.00,
+                'currency' => 'NPR',
+                'status' => 'active',
+                'issued_at' => Carbon::now($timezone)->subDays(28),
+                'expires_at' => Carbon::now($timezone)->addDays(2),
+                'redeemed_at' => null,
+            ]
+        );
+
         // -------------------------------------------------------------
         // 5. Targeted Offer (1 Unclaimed / Pending)
         // -------------------------------------------------------------

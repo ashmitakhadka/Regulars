@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useSearchParams, useNavigate, Link } from "react-router-dom";
 import { useCustomerAuth } from "../../auth/CustomerAuthContext";
 import { businessService } from "../../services/customer/businessService";
+import { useJoinProgram } from "../../hooks/useJoinProgram";
 import { QrLandingCard } from "../../components/customer/QrLandingCard";
 import { CustomerForbiddenState } from "../../components/customer/CustomerProtectedRoute";
 import { Button } from "../../components/ui/Button";
@@ -13,6 +14,7 @@ import { Logo } from "../../components/ui/Logo";
 /**
  * Public Program QR Landing Page (/businesses/:slug/programs/:id/join?qr={token}).
  * Checks program validity, routes joined customers directly to their wallet card,
+ * allows direct join for logged in customers without a card,
  * and passes safe redirect parameters to login/register for guest users.
  */
 export const ProgramJoin = () => {
@@ -24,6 +26,8 @@ export const ProgramJoin = () => {
   const [program, setProgram] = useState(null);
   const [programLoading, setProgramLoading] = useState(false);
   const [errorType, setErrorType] = useState(null); // '404' | '403' | 'error'
+
+  const { join, isJoining, getError } = useJoinProgram();
 
   const activeRequestIdRef = useRef(0);
   const abortControllerRef = useRef(null);
@@ -102,6 +106,15 @@ export const ProgramJoin = () => {
     };
   }, [customer, fetchProgram]);
 
+  const handleJoin = async () => {
+    if (!program?.id) return;
+    const res = await join(program.id);
+    if (!res || !res.success) return;
+
+    // Success (201 or 200 already_joined): navigate to wallet with replace
+    navigate(`/wallet/${res.card.id}`, { replace: true });
+  };
+
   // 1. Show only a Spinner while customer auth state is loading
   if (authLoading) {
     return (
@@ -176,9 +189,24 @@ export const ProgramJoin = () => {
         title="Join this loyalty program"
         subtitle={subtitle}
         actionButton={
-          <Button to={programDetailPath} variant="primary" fullWidth size="lg">
-            Join and get card
-          </Button>
+          <div className="w-full space-y-2">
+            <Button
+              variant="primary"
+              fullWidth
+              size="lg"
+              loading={isJoining(program?.id)}
+              disabled={isJoining(program?.id)}
+              onClick={handleJoin}
+              className="min-h-[48px]"
+            >
+              Join and get card
+            </Button>
+            {getError(program?.id) && (
+              <p className="text-xs sm:text-sm text-brand-900 font-medium text-center" role="alert">
+                {getError(program?.id)}
+              </p>
+            )}
+          </div>
         }
       />
     );
@@ -196,6 +224,7 @@ export const ProgramJoin = () => {
           variant="primary"
           fullWidth
           size="lg"
+          className="min-h-[48px]"
         >
           Join and get card
         </Button>

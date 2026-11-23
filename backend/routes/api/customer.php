@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\Customer\CustomerAuthController;
 use App\Http\Controllers\Api\Customer\CustomerBusinessController;
+use App\Http\Controllers\Api\Customer\CustomerJoinController;
+use App\Http\Controllers\Api\Customer\CustomerVoucherController;
 use App\Http\Controllers\Api\Customer\CustomerWalletController;
 use Illuminate\Support\Facades\Route;
 
@@ -22,5 +24,14 @@ Route::middleware(['auth:sanctum', 'customer'])->group(function () {
     // Customer Wallet & Stamp Cards
     Route::get('/customer/wallet', [CustomerWalletController::class, 'index']);
     Route::get('/customer/stamp-cards/{id}', [CustomerWalletController::class, 'show']);
-});
 
+    // Customer Program Joining (Rate limited to 30 requests per minute)
+    Route::middleware('throttle:30,1')->group(function () {
+        Route::post('/customer/programs/join', [CustomerJoinController::class, 'bulkJoin']);
+        Route::post('/customer/programs/{id}/join', [CustomerJoinController::class, 'join']);
+    });
+
+    // Customer Vouchers
+    Route::get('/customer/vouchers', [CustomerVoucherController::class, 'index']);
+    Route::get('/customer/vouchers/{id}', [CustomerVoucherController::class, 'show']);
+});

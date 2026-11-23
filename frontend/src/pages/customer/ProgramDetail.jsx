@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faGift,
@@ -9,21 +9,26 @@ import {
   faCircleInfo,
 } from "@fortawesome/free-solid-svg-icons";
 import { businessService } from "../../services/customer/businessService";
+import { useJoinProgram } from "../../hooks/useJoinProgram";
 import { Card } from "../../components/ui/Card";
 import { Tag } from "../../components/ui/Tag";
 import { Button } from "../../components/ui/Button";
 import { Spinner } from "../../components/ui/Spinner";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { ErrorState } from "../../components/ui/ErrorState";
+import { BackButton } from "../../components/ui/BackButton";
 import { StampProgress } from "../../components/customer/StampProgress";
 
 export const ProgramDetail = () => {
   const { slug, id } = useParams();
+  const navigate = useNavigate();
 
   const [program, setProgram] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [notFound, setNotFound] = useState(false);
+
+  const { join, isJoining, getError } = useJoinProgram();
 
   const fetchProgram = async () => {
     setLoading(true);
@@ -61,6 +66,25 @@ export const ProgramDetail = () => {
   useEffect(() => {
     fetchProgram();
   }, [slug, id]);
+
+  const handleJoin = async () => {
+    if (!program?.id) return;
+    const res = await join(program.id);
+    if (!res || !res.success) return;
+
+    // Update state to show Joined without a full reload
+    setProgram((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        already_joined: true,
+        my_card: res.card,
+        card_id: res.card.id,
+      };
+    });
+
+    navigate(`/wallet/${res.card.id}`);
+  };
 
   if (loading) {
     return (
@@ -108,8 +132,6 @@ export const ProgramDetail = () => {
     program?.reward?.title || program?.reward_title || "Program Reward";
   const rewardDesc =
     program?.reward?.description || program?.reward_description;
-  const rewardType =
-    program?.reward?.reward_type || program?.reward_type || "Reward";
   const validityDays =
     program?.reward?.voucher_validity_days || program?.voucher_validity_days || 30;
 
@@ -118,15 +140,9 @@ export const ProgramDetail = () => {
 
   return (
     <div className="space-y-6">
-      {/* Back Link */}
+      {/* Back Button */}
       <div>
-        <Link
-          to={`/businesses/${slug}`}
-          className="inline-flex items-center gap-2 text-xs font-semibold text-brand-800 hover:underline min-h-[44px] py-2"
-        >
-          <FontAwesomeIcon icon={faArrowLeft} className="text-xs" />
-          <span>Back to {program?.business_name || "business"}</span>
-        </Link>
+        <BackButton to={`/businesses/${slug}`} iconOnly />
       </div>
 
       {/* Program Header Card */}
@@ -178,7 +194,6 @@ export const ProgramDetail = () => {
 
         {isJoined && myCard ? (
           <div className="space-y-4">
-            {/* Reusable StampProgress component */}
             <StampProgress
               stamps={myCard.stamps_earned}
               total={stampsRequired}
@@ -190,17 +205,34 @@ export const ProgramDetail = () => {
                 to={`/wallet/${cardId}`}
                 variant="primary"
                 size="md"
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto min-h-[44px]"
               >
                 View my card in wallet
               </Button>
             </div>
           </div>
         ) : (
-          <div className="rounded-lg bg-blush-50 p-4 border border-blush-200">
+          <div className="rounded-lg bg-blush-50 p-4 sm:p-5 border border-blush-200 space-y-3">
             <p className="text-sm text-ink-soft leading-relaxed">
-              You haven't joined this loyalty program yet. Scan the shop's QR code at the counter to join and start collecting stamps.
+              You haven't joined this loyalty program yet. Join now to get your digital stamp card and start collecting stamps.
             </p>
+            <div className="pt-1">
+              <Button
+                variant="primary"
+                size="md"
+                loading={isJoining(program?.id)}
+                disabled={isJoining(program?.id)}
+                onClick={handleJoin}
+                className="w-full sm:w-auto min-h-[44px]"
+              >
+                Join and get card
+              </Button>
+              {getError(program?.id) && (
+                <p className="text-xs sm:text-sm text-brand-900 font-medium mt-2" role="alert">
+                  {getError(program?.id)}
+                </p>
+              )}
+            </div>
           </div>
         )}
       </Card>

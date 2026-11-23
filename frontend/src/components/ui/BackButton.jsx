@@ -3,7 +3,14 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { Button } from "./Button";
 
-const BackButton = ({ to, iconOnly = false, size = "md" }) => {
+export const BackButton = ({
+  to,
+  iconOnly = false,
+  size,
+  className = "",
+  ariaLabel = "Go back",
+  ...props
+}) => {
   const navigate = useNavigate();
 
   const handleBack = () => {
@@ -14,8 +21,17 @@ const BackButton = ({ to, iconOnly = false, size = "md" }) => {
     }
   };
 
+  const resolvedSize = size || (iconOnly ? "xs" : "md");
+
   return (
-    <Button variant="soft" size={size} onClick={handleBack}>
+    <Button
+      variant="soft"
+      size={resolvedSize}
+      onClick={handleBack}
+      className={className}
+      aria-label={ariaLabel}
+      {...props}
+    >
       <FontAwesomeIcon icon={faArrowLeft} />
       {!iconOnly && "Back"}
     </Button>
