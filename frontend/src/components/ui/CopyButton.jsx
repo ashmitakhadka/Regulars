@@ -69,6 +69,10 @@ export const CopyButton = ({
     }
   };
 
+  const srAnnouncement = copied
+    ? `${label === "Copy code" ? "Code" : label} copied to clipboard`
+    : "";
+
   return (
     <div className="relative inline-flex">
       <Button
@@ -76,7 +80,7 @@ export const CopyButton = ({
         size={size}
         onClick={handleCopy}
         className={className}
-        aria-label={copied ? "Code copied to clipboard" : label}
+        aria-label={copied ? srAnnouncement : label}
       >
         <FontAwesomeIcon
           icon={copied ? faCheck : faCopy}
@@ -88,7 +92,7 @@ export const CopyButton = ({
 
       {/* Screen reader live announcement */}
       <span className="sr-only" aria-live="polite" role="status">
-        {copied ? "Code copied to clipboard" : ""}
+        {srAnnouncement}
       </span>
     </div>
   );

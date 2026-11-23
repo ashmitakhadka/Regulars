@@ -70,6 +70,19 @@ export function CustomerAuthProvider({ children }) {
   };
 
   /**
+   * Update stored customer profile fields (only name and phone).
+   */
+  const updateCustomer = useCallback((updatedData) => {
+    setCustomer((prev) => {
+      if (!prev) return prev;
+      const allowed = {};
+      if (updatedData?.name !== undefined) allowed.name = updatedData.name;
+      if (updatedData?.phone !== undefined) allowed.phone = updatedData.phone;
+      return { ...prev, ...allowed };
+    });
+  }, []);
+
+  /**
    * Log out customer, set intentional logout flag, and clear session state.
    */
   const logout = async () => {
@@ -92,6 +105,7 @@ export function CustomerAuthProvider({ children }) {
         register,
         login,
         logout,
+        updateCustomer,
       }}
     >
       {children}
