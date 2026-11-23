@@ -238,7 +238,7 @@ export const Vouchers = () => {
                         Voucher redeemed successfully
                       </h2>
                       <p className="mt-1 text-sm text-[#23140C]/65">
-                        {lastRedeemed.reward_title} · {lastRedeemed.code}
+                        {lastRedeemed.reward_title}
                       </p>
                       <p className="mt-1 text-sm text-[#23140C]/65">
                         {formatReward(
@@ -332,7 +332,7 @@ export const Vouchers = () => {
                   <div className="w-full sm:w-56 [&>div]:m-0 [&_input]:h-8 [&_input]:py-0 [&_input]:text-[13px]">
                     <input
                       type="text"
-                      placeholder="Search vouchers..."
+                      placeholder="Search by customer or reward..."
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       autoComplete="off"
@@ -375,7 +375,6 @@ export const Vouchers = () => {
                     <table className="w-full min-w-[640px] text-left text-[14px]">
                       <thead>
                         <tr className="bg-[#F4F0EA]/50 text-[12px] uppercase tracking-wide text-[#23140C]/55">
-                          <th className="px-5 py-3 font-medium">Code</th>
                           <th className="px-5 py-3 font-medium">Customer</th>
                           <th className="px-5 py-3 font-medium">Reward</th>
                           <th className="px-5 py-3 font-medium">
@@ -395,9 +394,6 @@ export const Vouchers = () => {
                               key={v.id ?? v.code}
                               className="transition-colors hover:bg-[#F4F0EA]/30"
                             >
-                              <td className="px-5 py-3.5 font-mono text-[13.5px] font-semibold text-[#A51D27]">
-                                {v.code}
-                              </td>
                               <td className="px-5 py-3.5">
                                 <div className="flex items-center gap-3">
                                   <span className="text-[#23140C]">
@@ -406,7 +402,9 @@ export const Vouchers = () => {
                                 </div>
                               </td>
                               <td className="px-5 py-3.5">
-                                <p className="text-[#23140C]">{v.reward_title}</p>
+                                <p className="text-[#23140C]">
+                                  {v.reward_title}
+                                </p>
                                 <p className="text-[12.5px] text-[#23140C]/55">
                                   {formatReward(v.reward_type, v.reward_value)}
                                 </p>
@@ -446,9 +444,6 @@ export const Vouchers = () => {
                       return (
                         <div key={v.id ?? v.code} className="p-4 space-y-2">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="font-mono text-[14px] font-bold text-[#A51D27]">
-                              {v.code}
-                            </span>
                             <Tag variant={STATUS_TAG[v.status] || "cream"}>
                               {v.status
                                 ? v.status.charAt(0).toUpperCase() +

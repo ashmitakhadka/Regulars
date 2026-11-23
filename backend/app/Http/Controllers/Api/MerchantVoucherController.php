@@ -56,7 +56,8 @@ class MerchantVoucherController extends Controller
             default => $query->where('status', 'active')
                 ->whereNull('redeemed_at')
                 ->where(function ($q) use ($now) {
-                    $q->whereNull('expires_at')->orWhere('expires_at', '>', $now);
+                    $q->whereNull('expires_at')
+                        ->orWhere('expires_at', '>', $now);
                 }),
         };
     }
@@ -72,9 +73,12 @@ class MerchantVoucherController extends Controller
             return $this->forbidden();
         }
 
-        $status = in_array($request->query('status'), ['active', 'redeemed', 'expired'], true)
-            ? $request->query('status')
-            : 'active';
+        $status = in_array(
+            $request->query('status'),
+            ['active', 'redeemed', 'expired'],
+            true
+        ) ? $request->query('status') : 'active';
+
         $search = trim((string) $request->query('search', ''));
         $perPage = max(1, min((int) $request->query('per_page', 10), 50));
 
@@ -86,8 +90,9 @@ class MerchantVoucherController extends Controller
 
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
-                $q->where('code', 'like', "%{$search}%")
-                    ->orWhereHas('customer', fn ($c) => $c->where('name', 'like', "%{$search}%"));
+                $q->whereHas('customer', fn ($c) =>
+                    $c->where('name', 'like', "%{$search}%")
+                )->orWhere('reward_title', 'like', "%{$search}%");
             });
         }
 
@@ -101,18 +106,18 @@ class MerchantVoucherController extends Controller
             'success' => true,
             'data' => $paginator->getCollection()->map(fn ($v) => [
                 'id' => $v->id,
-                'code' => $v->code,
                 'customer_name' => $v->customer?->name,
                 'reward_title' => $v->reward_title,
                 'reward_type' => $v->reward_type,
                 'reward_value' => $v->reward_value,
-                'program_name' => null, // Fill in once the voucher has a program relationship.
+                'program_name' => null,
                 'status' => ($v->status === 'active' && $v->expires_at && $v->expires_at->lte($now))
                     ? 'expired'
                     : $v->status,
                 'expires_at' => $v->expires_at,
                 'redeemed_at' => $v->redeemed_at,
             ])->values(),
+
             'meta' => [
                 'current_page' => $paginator->currentPage(),
                 'last_page' => $paginator->lastPage(),
@@ -137,28 +142,48 @@ class MerchantVoucherController extends Controller
         $startOfDay = now($timezone)->startOfDay()->utc();
         $startOfMonth = now($timezone)->startOfMonth()->utc();
 
-        $base = fn () => Voucher::query()->where('merchant_id', $merchant->id);
+        $base = fn () => Voucher::query()
+            ->where('merchant_id', $merchant->id);
+
         $redeemed = fn () => $base()->where('status', 'redeemed');
         $active = fn () => $this->applyStatus($base(), 'active');
 
         return response()->json([
             'success' => true,
             'data' => [
-                'redeemed_today' => $redeemed()->where('redeemed_at', '>=', $startOfDay)->count(),
-                'active' => $active()->count(),
-                'expiring_soon' => $active()
-                    ->whereBetween('expires_at', [$now, $now->copy()->addDays(7)])
+                'redeemed_today' => $redeemed()
+                    ->where('redeemed_at', '>=', $startOfDay)
                     ->count(),
-                'redeemed_this_month' => $redeemed()->where('redeemed_at', '>=', $startOfMonth)->count(),
+
+                'active' => $active()->count(),
+
+                'expiring_soon' => $active()
+                    ->whereBetween('expires_at', [
+                        $now,
+                        $now->copy()->addDays(7),
+                    ])
+                    ->count(),
+
+                'redeemed_this_month' => $redeemed()
+                    ->where('redeemed_at', '>=', $startOfMonth)
+                    ->count(),
             ],
         ]);
     }
 
+    /**
+     * POST /merchant/vouchers/redeem
+     */
     public function redeemVoucher(Request $request)
     {
         $validated = $request->validate([
             'code' => ['required', 'string', 'max:255'],
         ]);
+
+        // Accept codes with or without the display hyphen.
+        $code = strtoupper(
+            str_replace('-', '', trim($validated['code']))
+        );
 
         $user = $request->user();
 
@@ -172,16 +197,14 @@ class MerchantVoucherController extends Controller
         $merchant = $user->merchant()->first();
 
         if (!$merchant || $merchant->status !== 'active') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Active merchant account not found.',
-            ], 403);
+            return $this->forbidden();
         }
 
-        return DB::transaction(function () use ($validated, $merchant, $user) {
+        return DB::transaction(function () use ($code, $merchant, $user) {
 
-            $voucher = Voucher::where('code', $validated['code'])
+            $voucher = Voucher::where('code', $code)
                 ->where('merchant_id', $merchant->id)
+                ->with('customer')
                 ->lockForUpdate()
                 ->first();
 
@@ -230,8 +253,8 @@ class MerchantVoucherController extends Controller
                 'message' => 'Voucher redeemed successfully.',
                 'data' => [
                     'voucher_id' => $voucher->id,
-                    'code' => $voucher->code,
                     'customer_id' => $voucher->customer_id,
+                    'customer_name' => $voucher->customer?->name,
                     'reward_title' => $voucher->reward_title,
                     'reward_type' => $voucher->reward_type,
                     'reward_value' => $voucher->reward_value,
