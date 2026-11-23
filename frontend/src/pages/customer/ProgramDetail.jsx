@@ -16,6 +16,7 @@ import { Button } from "../../components/ui/Button";
 import { Spinner } from "../../components/ui/Spinner";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { ErrorState } from "../../components/ui/ErrorState";
+import { BackButton } from "../../components/ui/BackButton";
 import { StampProgress } from "../../components/customer/StampProgress";
 
 export const ProgramDetail = () => {
@@ -139,15 +140,9 @@ export const ProgramDetail = () => {
 
   return (
     <div className="space-y-6">
-      {/* Back Link */}
+      {/* Back Button */}
       <div>
-        <Link
-          to={`/businesses/${slug}`}
-          className="inline-flex items-center gap-2 text-xs font-semibold text-brand-800 hover:underline min-h-[44px] py-2"
-        >
-          <FontAwesomeIcon icon={faArrowLeft} className="text-xs" />
-          <span>Back to {program?.business_name || "business"}</span>
-        </Link>
+        <BackButton to={`/businesses/${slug}`} iconOnly />
       </div>
 
       {/* Program Header Card */}

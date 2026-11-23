@@ -14,7 +14,7 @@ const MONTHS = [
 ];
 
 /**
- * Format an ISO date string "YYYY-MM-DD" into "DD Mon YYYY" (e.g. "19 Nov 2026").
+ * Format an ISO date string "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM:SS..." into "DD Mon YYYY" (e.g. "19 Nov 2026").
  * Uses pure string splitting without new Date() so timezone never shifts the calendar day.
  */
 export function formatPlainDate(dateStr) {
@@ -57,6 +57,22 @@ export function formatVisitDateTime(dateStr, timeStr) {
   const t = formatPlainTime(timeStr);
   if (d && t) return `${d}, ${t}`;
   return d || t || "";
+}
+
+/**
+ * Format an ISO datetime string into "DD Mon YYYY, HH:MM AM/PM" using pure string splitting.
+ */
+export function formatIsoDateTime(isoStr) {
+  if (!isoStr || typeof isoStr !== "string") return "";
+  const parts = isoStr.trim().split("T");
+  const datePart = parts[0];
+  const d = formatPlainDate(datePart);
+  if (parts.length < 2) return d;
+
+  const timeWithTz = parts[1];
+  const timePart = timeWithTz.split(/[+-Z]/)[0];
+  const t = formatPlainTime(timePart);
+  return t ? `${d}, ${t}` : d;
 }
 
 export default formatVisitDateTime;

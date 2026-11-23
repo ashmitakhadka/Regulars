@@ -15,6 +15,7 @@ import { Button } from "../../components/ui/Button";
 import { Spinner } from "../../components/ui/Spinner";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { ErrorState } from "../../components/ui/ErrorState";
+import { BackButton } from "../../components/ui/BackButton";
 import { ProgramCard } from "../../components/customer/ProgramCard";
 
 export const BusinessDetail = () => {
@@ -186,15 +187,9 @@ export const BusinessDetail = () => {
 
   return (
     <div className="space-y-6">
-      {/* Back Link */}
+      {/* Back Button */}
       <div>
-        <Link
-          to="/businesses"
-          className="inline-flex items-center gap-2 text-xs font-semibold text-brand-800 hover:underline min-h-[44px] py-2"
-        >
-          <FontAwesomeIcon icon={faArrowLeft} className="text-xs" />
-          <span>Back to all businesses</span>
-        </Link>
+        <BackButton to="/businesses" iconOnly />
       </div>
 
       {/* Business Header Card */}
