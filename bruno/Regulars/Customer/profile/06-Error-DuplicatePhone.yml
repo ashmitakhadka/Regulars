@@ -1,0 +1,23 @@
+info:
+  name: 06 Error Duplicate Phone
+  type: http
+  seq: 6
+
+http:
+  method: PATCH
+  url: http://localhost:8000/api/customer/profile
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Aayush Sharma",
+        "phone": "9841234567"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
