@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faGift, faAward } from "@fortawesome/free-solid-svg-icons";
+import { faGift } from "@fortawesome/free-solid-svg-icons";
 import { Card } from "../ui/Card";
 import { Tag } from "../ui/Tag";
 import { Button } from "../ui/Button";
@@ -8,11 +8,21 @@ import { Button } from "../ui/Button";
 /**
  * Reusable ProgramCard for loyalty program listings on shop detail pages.
  * Displays program rules, reward description, and membership status.
- * Notice: When not joined, renders program details without any join button.
+ * Backward-compatible: If onJoin is provided and program is not joined,
+ * renders a primary "Join and get card" button with loading/error handling.
+ * If onJoin is omitted, retains the previous "Available at this shop" label.
  */
-export const ProgramCard = ({ program, businessSlug }) => {
-  const isJoined = Boolean(program.already_joined || program.joined);
-  const cardId = program.card_id;
+export const ProgramCard = ({
+  program,
+  businessSlug,
+  onJoin,
+  isJoining = false,
+  joinError = null,
+}) => {
+  const isJoined = Boolean(
+    program.already_joined || program.joined || program.is_joined
+  );
+  const cardId = program.card_id || program.card?.id;
 
   const rewardTitle =
     program.reward?.title || program.reward_title || "Special Reward";
@@ -76,15 +86,33 @@ export const ProgramCard = ({ program, businessSlug }) => {
 
       {/* Footer Actions */}
       <div className="mt-4 pt-3 border-t border-blush-100 flex items-center justify-between gap-3 flex-wrap">
-        {isJoined && cardId ? (
+        {isJoined ? (
           <Button
-            to={`/wallet/${cardId}`}
+            to={cardId ? `/wallet/${cardId}` : "/wallet"}
             variant="outline"
             size="sm"
-            className="w-full sm:w-auto text-xs sm:text-sm"
+            className="w-full sm:w-auto text-xs sm:text-sm min-h-[44px]"
           >
             View my card
           </Button>
+        ) : onJoin ? (
+          <div className="w-full sm:w-auto flex flex-col gap-1.5">
+            <Button
+              variant="primary"
+              size="sm"
+              loading={isJoining}
+              disabled={isJoining}
+              onClick={() => onJoin(program.id)}
+              className="w-full sm:w-auto text-xs sm:text-sm min-h-[44px]"
+            >
+              Join and get card
+            </Button>
+            {joinError && (
+              <p className="text-xs text-brand-900 font-medium" role="alert">
+                {joinError}
+              </p>
+            )}
+          </div>
         ) : (
           <span className="text-xs sm:text-sm text-ink-soft font-medium">
             Available at this shop

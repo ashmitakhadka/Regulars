@@ -16,6 +16,7 @@ import { Button } from "../../components/ui/Button";
 import { Spinner } from "../../components/ui/Spinner";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { ErrorState } from "../../components/ui/ErrorState";
+import { BackButton } from "../../components/ui/BackButton";
 import { StampProgress } from "../../components/customer/StampProgress";
 import { StampGrid } from "../../components/customer/StampGrid";
 import {
@@ -97,13 +98,9 @@ export const CardDetail = () => {
   if (is404) {
     return (
       <div className="space-y-6">
-        <Link
-          to="/wallet"
-          className="text-xs sm:text-sm font-semibold text-brand-800 hover:underline inline-flex items-center gap-1.5 min-h-[44px] py-2"
-        >
-          <FontAwesomeIcon icon={faArrowLeft} className="text-xs" aria-hidden="true" />
-          <span>Back to wallet</span>
-        </Link>
+        <div>
+          <BackButton to="/wallet" iconOnly />
+        </div>
         <EmptyState
           title="Card not found"
           description="This stamp card does not exist or belongs to another customer account."
@@ -121,13 +118,9 @@ export const CardDetail = () => {
   if (error || !card) {
     return (
       <div className="space-y-6">
-        <Link
-          to="/wallet"
-          className="text-xs sm:text-sm font-semibold text-brand-800 hover:underline inline-flex items-center gap-1.5 min-h-[44px] py-2"
-        >
-          <FontAwesomeIcon icon={faArrowLeft} className="text-xs" aria-hidden="true" />
-          <span>Back to wallet</span>
-        </Link>
+        <div>
+          <BackButton to="/wallet" iconOnly />
+        </div>
         <ErrorState
           title="Couldn't load card details"
           message={error || "An unexpected error occurred."}
@@ -175,15 +168,9 @@ export const CardDetail = () => {
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
-      {/* Back Link to Wallet */}
+      {/* Back Button to Wallet */}
       <div>
-        <Link
-          to="/wallet"
-          className="text-xs sm:text-sm font-semibold text-brand-800 hover:underline inline-flex items-center gap-1.5 min-h-[44px] py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 rounded"
-        >
-          <FontAwesomeIcon icon={faArrowLeft} className="text-xs" aria-hidden="true" />
-          <span>Back to wallet</span>
-        </Link>
+        <BackButton to="/wallet" iconOnly />
       </div>
 
       {/* Header: Business & Program Name + Status Tag */}
