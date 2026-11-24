@@ -514,14 +514,21 @@ class MerchantStampController extends Controller
     }
 
     /**
-     * Generate a unique voucher code.
-     */
-    private function generateVoucherCode(): string
-    {
-        do {
-            $code = Str::upper(Str::random(12));
-        } while (Voucher::where('code', $code)->exists());
+ * Generate a unique 8-character voucher code.
+ */
+private function generateVoucherCode(): string
+{
+    $characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
-        return $code;
-    }
+    do {
+        $code = '';
+
+        for ($i = 0; $i < 8; $i++) {
+            $code .= $characters[random_int(0, strlen($characters) - 1)];
+        }
+
+    } while (Voucher::where('code', $code)->exists());
+
+    return $code;
+}
 }
