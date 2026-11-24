@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, Button, Input, Spinner, ErrorState, CopyButton, Alert } from "../../components/ui";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPen } from "@fortawesome/free-solid-svg-icons";
+import { Card, Button, Input, Spinner, ErrorState, Alert } from "../../components/ui";
 import { useCustomerAuth } from "../../auth/CustomerAuthContext";
 import profileService from "../../services/customer/profileService";
 import {
@@ -17,6 +19,7 @@ export const Profile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
 
+  const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({ name: "", phone: "" });
   const [formErrors, setFormErrors] = useState({});
   const [generalError, setGeneralError] = useState("");
@@ -83,7 +86,6 @@ export const Profile = () => {
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear notifications on edits
     if (successMessage) setSuccessMessage("");
     if (generalError) setGeneralError("");
     if (formErrors[field]) {
@@ -91,6 +93,34 @@ export const Profile = () => {
         const next = { ...prev };
         delete next[field];
         return next;
+      });
+    }
+  };
+
+  const handleStartEdit = () => {
+    setIsEditing(true);
+    setSuccessMessage("");
+    setGeneralError("");
+    setFormErrors({});
+    if (profile) {
+      setFormData({
+        name: profile.name || "",
+        phone: profile.phone || "",
+      });
+    }
+    setTimeout(() => {
+      nameInputRef.current?.focus();
+    }, 50);
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setFormErrors({});
+    setGeneralError("");
+    if (profile) {
+      setFormData({
+        name: profile.name || "",
+        phone: profile.phone || "",
       });
     }
   };
@@ -142,6 +172,7 @@ export const Profile = () => {
         });
         updateCustomer(res.data);
         setSuccessMessage("Profile updated");
+        setIsEditing(false);
       }
     } catch (err) {
       if (err.response?.status === 401) {
@@ -201,7 +232,7 @@ export const Profile = () => {
           Customer Profile
         </h1>
         <p className="text-sm text-ink-soft mt-1">
-          Manage your account information and view your member code.
+          Your customer identification and account details.
         </p>
       </div>
 
@@ -221,70 +252,102 @@ export const Profile = () => {
           />
         </Card>
       ) : (
-        <>
-          {/* Top Card: Avatar, Name, Member Since */}
-          <Card className="p-5 sm:p-6">
-            <div className="flex items-center gap-4">
+        <Card>
+          {/* Header Row: Avatar, Name/Email and Customer ID */}
+          <div className="text-center sm:text-left sm:flex sm:items-center sm:justify-between py-2 border-b border-blush-100 pb-6 mb-6 gap-4">
+            <div className="flex items-center gap-3.5 justify-center sm:justify-start">
               <div
-                className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-brand-800 text-white flex items-center justify-center text-xl sm:text-2xl font-extrabold shrink-0 select-none shadow-sm"
+                className="w-12 h-12 rounded-full bg-brand-800 text-white flex items-center justify-center text-lg font-extrabold shrink-0 select-none shadow-sm"
                 aria-hidden="true"
               >
                 {initialLetter}
               </div>
-              <div className="min-w-0 flex-1">
-                <h2 className="font-display text-xl sm:text-2xl font-bold text-brand-900 truncate">
+              <div className="text-left">
+                <h2 className="font-display text-xl font-bold text-brand-900 leading-tight">
                   {profile?.name || "Customer"}
                 </h2>
-                <p className="text-xs sm:text-sm text-ink-soft mt-0.5">
-                  Member since {formatPlainDate(profile?.member_since)}
-                </p>
+                <p className="text-xs text-ink-soft">{profile?.email || ""}</p>
               </div>
             </div>
-          </Card>
 
-          {/* Customer ID Card */}
-          <Card className="p-5 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="space-y-1">
-                <span className="text-xs font-bold text-brand-700 uppercase tracking-wider block">
-                  Customer ID
-                </span>
-                <div className="inline-block rounded-xl bg-blush-100/70 border border-blush-200/80 px-4 py-2 font-mono text-xl sm:text-2xl font-bold tracking-wider text-brand-900 select-all">
-                  {profile?.customer_code || "—"}
+            <div className="mt-4 sm:mt-0 text-center sm:text-right">
+              <span className="text-xs text-ink-soft uppercase tracking-wider block mb-1">
+                Customer ID
+              </span>
+              <span className="inline-block rounded-lg bg-blush-100 px-3 py-1 font-mono text-base font-extrabold text-brand-900 select-all">
+                {profile?.customer_code || "—"}
+              </span>
+            </div>
+          </div>
+
+          {/* Feedback alerts */}
+          {successMessage && (
+            <Alert variant="success" className="mb-4">
+              {successMessage}
+            </Alert>
+          )}
+
+          {generalError && (
+            <Alert variant="error" className="mb-4">
+              {generalError}
+            </Alert>
+          )}
+
+          {/* Middle Section: View Mode vs Edit Mode */}
+          {!isEditing ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between pb-1">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-ink-soft">
+                  Account Details
+                </h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleStartEdit}
+                  className="h-7 px-2.5 text-[11px] text-brand-900 border-brand-200 hover:bg-blush-50"
+                >
+                  <FontAwesomeIcon icon={faPen} className="text-[9px] mr-1" />
+                  Edit
+                </Button>
+              </div>
+
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between py-2.5 border-b border-blush-50">
+                  <span className="text-ink-soft">Full Name</span>
+                  <span className="font-semibold text-ink">{profile?.name || "—"}</span>
+                </div>
+
+                <div className="flex justify-between py-2.5 border-b border-blush-50">
+                  <span className="text-ink-soft">Phone Number</span>
+                  <span className="font-semibold text-ink">{profile?.phone || "—"}</span>
+                </div>
+
+                <div className="flex justify-between py-2.5 border-b border-blush-50">
+                  <span className="text-ink-soft">Email Address</span>
+                  <span className="font-semibold text-ink">{profile?.email || "—"}</span>
+                </div>
+
+                <div className="flex justify-between py-2.5 border-b border-blush-50">
+                  <span className="text-ink-soft">Member Since</span>
+                  <span className="font-semibold text-ink">
+                    {formatPlainDate(profile?.member_since) || "—"}
+                  </span>
+                </div>
+
+                <div className="flex justify-between py-2.5 border-b border-blush-50">
+                  <span className="text-ink-soft">Account Type</span>
+                  <span className="font-semibold text-ink capitalize">Customer</span>
                 </div>
               </div>
-              <div className="sm:self-center">
-                <CopyButton
-                  text={profile?.customer_code}
-                  label="Copy ID"
-                  size="md"
-                />
-              </div>
             </div>
-            <p className="text-xs sm:text-sm text-ink-soft mt-3">
-              Show this ID to a shop if they need to find your account.
-            </p>
-          </Card>
+          ) : (
+            <form onSubmit={handleSave} noValidate className="space-y-4 pt-1">
+              <div className="flex items-center justify-between pb-1">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-ink-soft">
+                  Edit Details
+                </h3>
+              </div>
 
-          {/* Edit Profile Form Card */}
-          <Card className="p-5 sm:p-6">
-            <h3 className="font-display text-lg font-bold text-brand-900 mb-4">
-              Account Details
-            </h3>
-
-            {successMessage && (
-              <Alert variant="success" className="mb-4">
-                {successMessage}
-              </Alert>
-            )}
-
-            {generalError && (
-              <Alert variant="error" className="mb-4">
-                {generalError}
-              </Alert>
-            )}
-
-            <form onSubmit={handleSave} noValidate className="space-y-4">
               <Input
                 ref={nameInputRef}
                 label="Full Name"
@@ -321,40 +384,41 @@ export const Profile = () => {
                 hint="Email cannot be changed"
               />
 
-              <div className="pt-2">
+              <div className="pt-2 flex items-center gap-3">
                 <Button
                   type="submit"
                   variant="primary"
+                  size="sm"
                   loading={isSaving}
                   disabled={!isChanged || isSaving}
-                  className="w-full sm:w-auto"
                 >
                   Save changes
                 </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={isSaving}
+                  onClick={handleCancel}
+                >
+                  Cancel
+                </Button>
               </div>
             </form>
-          </Card>
+          )}
 
-          {/* Log Out Section */}
-          <Card className="p-5 sm:p-6 flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-brand-900 text-sm sm:text-base">
-                Sign out of account
-              </h3>
-              <p className="text-xs text-ink-soft mt-0.5">
-                End your active customer session on this device.
-              </p>
-            </div>
+          {/* Sign Out Footer */}
+          <div className="mt-8 pt-4 border-t border-blush-50 flex items-center justify-between">
             <Button
-              variant="outline"
-              size="sm"
+              variant="ghost"
               onClick={handleLogout}
-              className="text-brand-800 border-brand-200 hover:bg-blush-50"
+              size="sm"
+              className="text-ink-soft hover:text-brand-900"
             >
-              Log Out
+              Sign out
             </Button>
-          </Card>
-        </>
+          </div>
+        </Card>
       )}
     </div>
   );
