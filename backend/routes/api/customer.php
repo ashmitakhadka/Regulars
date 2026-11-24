@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\Customer\CustomerAuthController;
 use App\Http\Controllers\Api\Customer\CustomerBusinessController;
 use App\Http\Controllers\Api\Customer\CustomerJoinController;
+use App\Http\Controllers\Api\Customer\CustomerProfileController;
 use App\Http\Controllers\Api\Customer\CustomerVoucherController;
 use App\Http\Controllers\Api\Customer\CustomerWalletController;
 use Illuminate\Support\Facades\Route;
@@ -15,6 +16,10 @@ Route::post('/login/customer', [CustomerAuthController::class, 'login']);
 Route::middleware(['auth:sanctum', 'customer'])->group(function () {
     Route::post('/logout/customer', [CustomerAuthController::class, 'logout']);
     Route::get('/customer/me', [CustomerAuthController::class, 'me']);
+
+    // Customer Profile
+    Route::get('/customer/profile', [CustomerProfileController::class, 'show']);
+    Route::patch('/customer/profile', [CustomerProfileController::class, 'update'])->middleware('throttle:20,1');
 
     // Customer Business Directory & Program Details
     Route::get('/customer/businesses', [CustomerBusinessController::class, 'index']);

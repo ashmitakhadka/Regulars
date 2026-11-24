@@ -1,0 +1,23 @@
+info:
+  name: 07 Error Empty Name
+  type: http
+  seq: 7
+
+http:
+  method: PATCH
+  url: http://localhost:8000/api/customer/profile
+  body:
+    type: json
+    data: |-
+      {
+        "name": "   ",
+        "phone": "9812345678"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

@@ -1,15 +1,15 @@
 import { z } from "zod";
 
 /**
- * Validates a Nepal mobile number:
+ * Normalizes a Nepal mobile number:
  * Strips whitespace, dashes, brackets, +977, 00977, and leading 0.
- * Checks for 10 digits starting with 96, 97, or 98.
+ * Returns the raw digits (e.g. "9812345678").
  */
-export const normalizeAndValidateNepaliPhone = (val) => {
-  if (!val || typeof val !== "string") return false;
+export const normalizeNepaliPhone = (val) => {
+  if (!val || typeof val !== "string") return "";
 
   let digits = val.replace(/\D+/g, "");
-  if (!digits) return false;
+  if (!digits) return "";
 
   if (digits.startsWith("00977") && digits.length === 15) {
     digits = digits.slice(5);
@@ -21,6 +21,16 @@ export const normalizeAndValidateNepaliPhone = (val) => {
     digits = digits.slice(1);
   }
 
+  return digits;
+};
+
+/**
+ * Validates a Nepal mobile number:
+ * Strips whitespace, dashes, brackets, +977, 00977, and leading 0.
+ * Checks for 10 digits starting with 96, 97, or 98.
+ */
+export const normalizeAndValidateNepaliPhone = (val) => {
+  const digits = normalizeNepaliPhone(val);
   return /^9[678]\d{8}$/.test(digits);
 };
 
@@ -63,3 +73,18 @@ export const customerRegisterSchema = z
     message: "Passwords do not match",
     path: ["password_confirmation"],
   });
+
+export const customerProfileSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "Full name is required")
+    .max(100, "Name must be 100 characters or less"),
+  phone: z
+    .string()
+    .trim()
+    .min(1, "Phone number is required")
+    .refine(normalizeAndValidateNepaliPhone, {
+      message: "Must be a valid 10-digit Nepal mobile number (starts with 96, 97, or 98)",
+    }),
+});

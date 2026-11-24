@@ -9,5 +9,6 @@ export { ErrorState } from "./ErrorState";
 export { default as BackButton } from "./BackButton";
 export { TabBar } from "./TabBar";
 export { CopyButton } from "./CopyButton";
+export { Alert } from "./Alert";
 export { OptionCard } from "./OptionCard";
 export { AuthChoiceLayout } from "./AuthChoiceLayout";

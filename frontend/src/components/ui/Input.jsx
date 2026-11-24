@@ -1,8 +1,8 @@
-import { useId, useState } from "react";
+import { useId, useState, forwardRef } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 
-export const Input = ({
+export const Input = forwardRef(({
   label,
   labelClassName = "",
   hint,
@@ -13,7 +13,7 @@ export const Input = ({
   disabled = false,
   required = false,
   ...props
-}) => {
+}, ref) => {
   const generatedId = useId();
   const inputId = id || generatedId;
   const isPassword = type === "password";
@@ -34,6 +34,7 @@ export const Input = ({
 
       <div className="relative">
         <input
+          ref={ref}
           id={inputId}
           type={effectiveType}
           disabled={disabled}
@@ -79,6 +80,8 @@ export const Input = ({
       ) : null}
     </div>
   );
-};
+});
+
+Input.displayName = "Input";
 
 export default Input;
