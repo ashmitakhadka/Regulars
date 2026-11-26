@@ -52,7 +52,13 @@ export const AdminMerchantDetail = () => {
         setMerchant(res.data);
       }
     } catch (err) {
-      if (err.name === "CanceledError" || err.code === "ERR_CANCELED") return;
+      if (
+        err.name === "CanceledError" ||
+        err.code === "ERR_CANCELED" ||
+        controller.signal.aborted
+      ) {
+        return;
+      }
       if (err.response?.status === 401 || err.response?.status === 403) {
         navigate("/admin/login", { replace: true });
         return;
@@ -65,7 +71,9 @@ export const AdminMerchantDetail = () => {
         );
       }
     } finally {
-      setIsLoading(false);
+      if (!controller.signal.aborted) {
+        setIsLoading(false);
+      }
     }
   }, [id, navigate]);
 
@@ -146,6 +154,7 @@ export const AdminMerchantDetail = () => {
     }
   };
 
+  // 1. Loading state
   if (isLoading) {
     return (
       <div className="py-24 flex flex-col items-center justify-center">
@@ -155,7 +164,22 @@ export const AdminMerchantDetail = () => {
     );
   }
 
-  if (error === "404") {
+  // 2. Generic error state (with retry)
+  if (error && error !== "404") {
+    return (
+      <div className="space-y-4">
+        <BackButton fallbackPath="/admin/merchants" />
+        <ErrorState
+          title="Could not load merchant"
+          message={error}
+          onRetry={fetchMerchant}
+        />
+      </div>
+    );
+  }
+
+  // 3. 404 or missing merchant state
+  if (error === "404" || !merchant) {
     return (
       <div className="space-y-4">
         <BackButton fallbackPath="/admin/merchants" />
@@ -174,22 +198,12 @@ export const AdminMerchantDetail = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="space-y-4">
-        <BackButton fallbackPath="/admin/merchants" />
-        <ErrorState
-          title="Could not load merchant"
-          message={error}
-          onRetry={fetchMerchant}
-        />
-      </div>
-    );
-  }
-
+  // 4. Data state: safely read all merchant fields with fallbacks
   const isActive = merchant?.status === "active";
   const stats = merchant?.stats || {};
-  const recentActivity = merchant?.recent_activity || [];
+  const recentActivity = Array.isArray(merchant?.recent_activity)
+    ? merchant.recent_activity
+    : [];
 
   return (
     <div className="space-y-6">
@@ -214,13 +228,13 @@ export const AdminMerchantDetail = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="font-display text-2xl sm:text-3xl font-bold text-brand-900 tracking-tight">
-                {merchant.business_name}
+              <h1 className="font-display text-xl sm:text-2xl font-bold text-brand-900 tracking-tight">
+                {merchant?.business_name || "Unnamed Business"}
               </h1>
               <Tag variant={isActive ? "green" : "red"}>
                 {isActive ? "Active" : "Suspended"}
               </Tag>
-              {merchant.is_pro && (
+              {merchant?.is_pro && (
                 <Tag variant="cream" className="font-bold">
                   <FontAwesomeIcon icon={faCrown} className="mr-1 text-[10px] text-brand-800" />
                   PRO
@@ -229,32 +243,39 @@ export const AdminMerchantDetail = () => {
             </div>
 
             <p className="text-xs sm:text-sm text-ink-soft mt-1">
-              {merchant.category || "General"} &bull; Slug: <span className="font-mono">/{merchant.slug}</span> &bull; Joined {formatKathmanduDate(merchant.created_at)}
+              {merchant?.category || "General"} &bull; Slug:{" "}
+              <span className="font-mono">/{merchant?.slug || "—"}</span>
+              {merchant?.created_at ? (
+                <> &bull; Joined {formatKathmanduDate(merchant.created_at)}</>
+              ) : null}
             </p>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <Button
               variant="outline"
-              size="sm"
+              size="xs"
               onClick={handleTogglePro}
               loading={isProLoading}
               disabled={isProLoading}
+              className="h-8 px-3 text-xs"
             >
-              <FontAwesomeIcon icon={faCrown} className="mr-1.5 text-xs" />
-              {merchant.is_pro ? "Revoke Pro" : "Upgrade to Pro"}
+              <FontAwesomeIcon icon={faCrown} className="mr-1 text-[11px]" />
+              {merchant?.is_pro ? "Revoke Pro" : "Upgrade to Pro"}
             </Button>
 
             <Button
               variant={isActive ? "outline" : "primary"}
-              size="sm"
+              size="xs"
               onClick={handleOpenStatusModal}
-              className={isActive ? "text-brand-900 border-brand-200 hover:bg-red-50" : ""}
+              className={`h-8 px-3 text-xs ${
+                isActive ? "text-brand-900 border-brand-200 hover:bg-red-50" : ""
+              }`}
             >
               <FontAwesomeIcon
                 icon={isActive ? faBan : faCheck}
-                className="mr-1.5 text-xs"
+                className="mr-1 text-[11px]"
               />
               {isActive ? "Suspend Business" : "Activate Business"}
             </Button>
@@ -305,7 +326,7 @@ export const AdminMerchantDetail = () => {
                 Description
               </span>
               <p className="mt-0.5 text-ink leading-relaxed">
-                {merchant.description || "No description provided."}
+                {merchant?.description || "No description provided."}
               </p>
             </div>
 
@@ -314,10 +335,10 @@ export const AdminMerchantDetail = () => {
                 Owner Account
               </span>
               <p className="font-semibold text-ink mt-0.5">
-                {merchant.owner?.name || "—"}
+                {merchant?.owner?.name || "Not provided"}
               </p>
               <p className="text-xs text-ink-soft">
-                {merchant.owner?.email || "—"}
+                {merchant?.owner?.email || "Not provided"}
               </p>
             </div>
 
@@ -325,8 +346,8 @@ export const AdminMerchantDetail = () => {
               <span className="text-ink-soft block text-[11px] uppercase tracking-wider font-semibold">
                 Contact & Address
               </span>
-              <p className="text-ink mt-0.5">{merchant.phone || "No phone listed"}</p>
-              <p className="text-xs text-ink-soft">{merchant.address || "No address listed"}</p>
+              <p className="text-ink mt-0.5">{merchant?.phone || "Not provided"}</p>
+              <p className="text-xs text-ink-soft">{merchant?.address || "Not provided"}</p>
             </div>
 
             <div className="pt-2 border-t border-blush-50 flex justify-between">
@@ -334,13 +355,13 @@ export const AdminMerchantDetail = () => {
                 <span className="text-ink-soft block text-[11px] uppercase tracking-wider font-semibold">
                   Timezone
                 </span>
-                <span className="text-ink font-medium">{merchant.timezone || "Asia/Kathmandu"}</span>
+                <span className="text-ink font-medium">{merchant?.timezone || "Asia/Kathmandu"}</span>
               </div>
               <div className="text-right">
                 <span className="text-ink-soft block text-[11px] uppercase tracking-wider font-semibold">
                   Currency
                 </span>
-                <span className="text-ink font-mono font-bold">{merchant.currency || "NPR"}</span>
+                <span className="text-ink font-mono font-bold">{merchant?.currency || "NPR"}</span>
               </div>
             </div>
           </div>
@@ -391,7 +412,7 @@ export const AdminMerchantDetail = () => {
                       </td>
                       <td className="px-3 py-3 text-right">
                         <Tag variant="green" className="font-bold">
-                          +{act.stamps_awarded}
+                          +{act.stamps_awarded ?? 0}
                         </Tag>
                       </td>
                     </tr>
@@ -414,8 +435,8 @@ export const AdminMerchantDetail = () => {
         loading={confirmModal.isLoading}
         title={
           confirmModal.targetStatus === "suspended"
-            ? `Suspend "${merchant.business_name}"?`
-            : `Activate "${merchant.business_name}"?`
+            ? `Suspend "${merchant?.business_name || "Business"}"?`
+            : `Activate "${merchant?.business_name || "Business"}"?`
         }
         confirmLabel={
           confirmModal.targetStatus === "suspended" ? "Suspend Business" : "Activate Business"

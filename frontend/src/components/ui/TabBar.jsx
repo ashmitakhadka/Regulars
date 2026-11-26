@@ -13,12 +13,17 @@ export const TabBar = ({
   onChange,
   className = "",
   ariaLabel = "Filter options",
+  size = "md",
 }) => {
+  const isSm = size === "sm";
+
   return (
     <div
       role="tablist"
       aria-label={ariaLabel}
-      className={`flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none ${className}`.trim()}
+      className={`flex items-center gap-1.5 overflow-x-auto ${
+        isSm ? "pb-0" : "pb-1"
+      } scrollbar-none ${className}`.trim()}
     >
       {tabs.map((tab) => {
         const isSelected = activeTab === tab.id;
@@ -27,9 +32,13 @@ export const TabBar = ({
           <Button
             key={tab.id}
             variant={isSelected ? "primary" : "secondary"}
-            size="sm"
+            size={isSm ? "xs" : "sm"}
             onClick={() => onChange && onChange(tab.id)}
-            className="rounded-full text-xs shrink-0 capitalize px-4 py-1.5 min-h-[44px]"
+            className={`rounded-full shrink-0 capitalize ${
+              isSm
+                ? "text-xs px-2.5 py-0.5 min-h-[30px] h-[30px]"
+                : "text-xs px-4 py-1.5 min-h-[44px]"
+            }`}
             role="tab"
             aria-selected={isSelected}
             id={`tab-${tab.id}`}

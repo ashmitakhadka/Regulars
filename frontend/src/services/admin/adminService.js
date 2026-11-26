@@ -34,8 +34,8 @@ export const adminService = {
   /**
    * Retrieve platform statistics.
    */
-  async getStats() {
-    const response = await api.get("/admin/stats");
+  async getStats(signal) {
+    const response = await api.get("/admin/stats", { signal });
     return response.data;
   },
 

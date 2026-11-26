@@ -10,6 +10,7 @@ import { CustomerAuthProvider } from "./auth/CustomerAuthContext";
 import { CustomerProtectedRoute } from "./components/customer/CustomerProtectedRoute";
 import { AdminAuthProvider } from "./auth/AdminAuthContext";
 import { AdminProtectedRoute } from "./components/admin/AdminProtectedRoute";
+import { AdminErrorPage } from "./components/admin/AdminErrorPage";
 import AdminLayout from "./layouts/AdminLayout";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -247,6 +248,7 @@ const router = createBrowserRouter([
   // Admin Routes (wrapped in AdminAuthProvider)
   {
     element: <AdminRoot />,
+    errorElement: <AdminErrorPage />,
     children: [
       { path: "/admin/login", element: <AdminLogin /> },
       {
