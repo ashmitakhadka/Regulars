@@ -8,6 +8,14 @@ import {
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import { CustomerAuthProvider } from "./auth/CustomerAuthContext";
 import { CustomerProtectedRoute } from "./components/customer/CustomerProtectedRoute";
+import { AdminAuthProvider } from "./auth/AdminAuthContext";
+import { AdminProtectedRoute } from "./components/admin/AdminProtectedRoute";
+import { AdminErrorPage } from "./components/admin/AdminErrorPage";
+import AdminLayout from "./layouts/AdminLayout";
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminMerchants from "./pages/admin/AdminMerchants";
+import AdminMerchantDetail from "./pages/admin/AdminMerchantDetail";
 import Home from "./pages/Home";
 import { MerchantRegistration } from "./pages/merchantAuth/merchantRegister";
 import { Toaster } from "react-hot-toast";
@@ -63,6 +71,13 @@ const CustomerRoot = () => (
   <CustomerAuthProvider>
     <Outlet />
   </CustomerAuthProvider>
+);
+
+// Admin routes subtree wrapper providing admin auth state
+const AdminRoot = () => (
+  <AdminAuthProvider>
+    <Outlet />
+  </AdminAuthProvider>
 );
 
 const router = createBrowserRouter([
@@ -228,6 +243,28 @@ const router = createBrowserRouter([
         <MerchantQrCode />
       </MerchantProtectedRoute>
     ),
+  },
+
+  // Admin Routes (wrapped in AdminAuthProvider)
+  {
+    element: <AdminRoot />,
+    errorElement: <AdminErrorPage />,
+    children: [
+      { path: "/admin/login", element: <AdminLogin /> },
+      {
+        path: "/admin",
+        element: (
+          <AdminProtectedRoute>
+            <AdminLayout />
+          </AdminProtectedRoute>
+        ),
+        children: [
+          { index: true, element: <AdminDashboard /> },
+          { path: "merchants", element: <AdminMerchants /> },
+          { path: "merchants/:id", element: <AdminMerchantDetail /> },
+        ],
+      },
+    ],
   },
 
   // Fallback (placed after explicit routes)

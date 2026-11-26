@@ -12,3 +12,5 @@ export { CopyButton } from "./CopyButton";
 export { Alert } from "./Alert";
 export { OptionCard } from "./OptionCard";
 export { AuthChoiceLayout } from "./AuthChoiceLayout";
+export { ConfirmDialog } from "./ConfirmDialog";
+export { StatTile } from "./StatTile";

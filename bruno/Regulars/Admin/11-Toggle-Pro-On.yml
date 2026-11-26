@@ -1,0 +1,22 @@
+info:
+  name: 11 Toggle Pro On
+  type: http
+  seq: 12
+
+http:
+  method: PATCH
+  url: http://localhost:8000/api/admin/merchants/1/pro
+  body:
+    type: json
+    data: |-
+      {
+        "is_pro": true
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

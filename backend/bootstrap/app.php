@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->statefulApi();
         $middleware->alias([
             'customer' => \App\Http\Middleware\Customer\EnsureUserIsCustomer::class,
+            'admin' => \App\Http\Middleware\Admin\EnsureUserIsAdmin::class,
         ]);
     })
     
