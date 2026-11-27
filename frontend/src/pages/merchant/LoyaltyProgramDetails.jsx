@@ -7,8 +7,6 @@ import {
   faUsers,
   faUserPlus,
   faSearch,
-  faDownload,
-  faPrint,
 } from "@fortawesome/free-solid-svg-icons";
 
 import { MerchantSidebar } from "../../components/merchant/MerchantSidebar";
@@ -455,132 +453,130 @@ export const LoyaltyProgramDetails = () => {
               )}
             </header>
 
-            {/* Program Details Card */}
-            <LoyaltyProgramDetailsCard program={program} />
-
-            {/* Dedicated Program QR Code Section */}
-            <section
-              className="rounded-2xl bg-white p-5 sm:p-7 shadow-[0_2px_12px_rgba(35,20,12,0.06)]"
-              aria-label="Loyalty program QR code"
-            >
-              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="font-display text-lg font-bold text-[#23140C]">
-                    Program QR Code
-                  </h2>
-                  <p className="mt-0.5 text-xs text-[#23140C]/65 sm:text-sm">
-                    Customers can scan this QR code to join this loyalty program.
-                  </p>
-                </div>
+            {/* Top Section: Program Details (Left) and Program QR Code (Right) - Equal Size Cards */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 items-stretch">
+              {/* Program Details Card */}
+              <div className="h-full">
+                <LoyaltyProgramDetailsCard program={program} className="h-full" />
               </div>
 
-              <div className="mt-5">
-                {isActive ? (
-                  <>
-                    {qrLoading && (
-                      <div className="flex min-h-[180px] flex-col items-center justify-center gap-3 rounded-xl bg-[#F4F0EA]/30 p-6">
-                        <Spinner size="md" />
-                        <p className="text-xs text-[#23140C]/60">
-                          Generating program QR code…
-                        </p>
-                      </div>
-                    )}
+              {/* Dedicated Program QR Code Section (Right Side) */}
+              <section
+                className="h-full rounded-2xl bg-white p-4 sm:p-5 lg:p-6 shadow-[0_2px_12px_rgba(35,20,12,0.06)] flex flex-col justify-between"
+                aria-label="Loyalty program QR code"
+              >
+                <div>
+                  <div className="text-center sm:text-left">
+                    <h2 className="font-display text-base font-bold text-[#23140C] sm:text-lg">
+                      Program QR Code
+                    </h2>
+                    <p className="mt-1 text-xs text-[#23140C]/65 leading-relaxed sm:text-sm">
+                      Customers can scan this QR code to join this loyalty program directly.
+                    </p>
+                  </div>
 
-                    {!qrLoading && qrError && (
-                      <div className="rounded-xl border border-red-100 bg-red-50/40 p-6">
-                        <ErrorState
-                          title="QR code unavailable"
-                          message={qrError}
-                          action={
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={loadQrCode}
-                            >
-                              Try again
-                            </Button>
-                          }
-                        />
-                      </div>
-                    )}
-
-                    {!qrLoading && !qrError && qrData && (
-                      <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center">
-                        <div
-                          id={`program-qr-${program.id}`}
-                          className="shrink-0 rounded-2xl border border-[#23140C]/[0.08] bg-white p-3.5 shadow-sm"
-                        >
-                          <QRCodeSVG
-                            value={qrData.qr_url}
-                            size={160}
-                            level="H"
-                            includeMargin
-                          />
-                        </div>
-
-                        <div className="flex-1 text-center sm:text-left space-y-3">
-                          <div>
-                            <h3 className="font-display text-base font-bold text-[#23140C]">
-                              {program.name}
-                            </h3>
-                            <p className="mt-1 text-xs text-[#23140C]/70 leading-relaxed max-w-lg">
-                              Display this QR code in your store or share it
-                              with customers to allow them to join this program
-                              directly on their phone.
+                  <div className="mt-4">
+                    {isActive ? (
+                      <>
+                        {qrLoading && (
+                          <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-xl bg-[#F4F0EA]/30 p-5 text-center">
+                            <Spinner size="md" />
+                            <p className="text-xs text-[#23140C]/60 sm:text-sm">
+                              Generating program QR code…
                             </p>
                           </div>
+                        )}
 
-                          <div className="flex flex-wrap justify-center gap-2.5 sm:justify-start pt-1">
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={handleDownloadQr}
-                            >
-                              <FontAwesomeIcon icon={faDownload} />
-                              <span>Download SVG</span>
-                            </Button>
-
-                            <Button
-                              variant="soft"
-                              size="sm"
-                              onClick={handlePrintQr}
-                            >
-                              <FontAwesomeIcon icon={faPrint} />
-                              <span>Print</span>
-                            </Button>
+                        {!qrLoading && qrError && (
+                          <div className="rounded-xl border border-red-100 bg-red-50/40 p-4">
+                            <ErrorState
+                              title="QR code unavailable"
+                              message={qrError}
+                              action={
+                                <Button
+                                  variant="outline"
+                                  size="xs"
+                                  onClick={loadQrCode}
+                                >
+                                  Try again
+                                </Button>
+                              }
+                            />
                           </div>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="rounded-xl border border-dashed border-[#23140C]/15 bg-[#F4F0EA]/20 p-6 text-center sm:text-left">
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                      <div>
+                        )}
+
+                        {!qrLoading && !qrError && qrData && (
+                          <div className="flex flex-col items-center text-center space-y-3 py-1">
+                            <div
+                              id={`program-qr-${program.id}`}
+                              className="shrink-0 rounded-xl border border-[#23140C]/[0.08] bg-white p-3 shadow-sm"
+                            >
+                              <QRCodeSVG
+                                value={qrData.qr_url}
+                                size={160}
+                                level="H"
+                                includeMargin
+                              />
+                            </div>
+
+                            <div className="max-w-sm">
+                              <h3 className="font-display text-sm font-bold text-[#23140C] sm:text-base">
+                                {program.name}
+                              </h3>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="rounded-xl border border-dashed border-[#23140C]/15 bg-[#F4F0EA]/20 p-5 text-center space-y-2.5">
                         <h3 className="text-sm font-semibold text-[#23140C]">
                           QR code is inactive
                         </h3>
-                        <p className="mt-1 text-xs text-[#23140C]/65">
+                        <p className="text-xs text-[#23140C]/65 leading-relaxed">
                           QR codes are only available while the loyalty program
                           is active. Activate this program to allow customer
                           scanning.
                         </p>
-                      </div>
 
-                      {!isArchived && (
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => setStatusModalOpen(true)}
-                        >
-                          Activate program
-                        </Button>
-                      )}
-                    </div>
+                        {!isArchived && (
+                          <Button
+                            variant="primary"
+                            size="xs"
+                            onClick={() => setStatusModalOpen(true)}
+                            className="mt-1"
+                          >
+                            Activate program
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Bottom Action Buttons (aligned to bottom) - Compact without divider or icons */}
+                {isActive && !qrLoading && !qrError && qrData && (
+                  <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                    <Button
+                      variant="secondary"
+                      size="xs"
+                      onClick={handleDownloadQr}
+                      className="flex-1 justify-center sm:flex-initial"
+                    >
+                      Download SVG
+                    </Button>
+
+                    <Button
+                      variant="soft"
+                      size="xs"
+                      onClick={handlePrintQr}
+                      className="flex-1 justify-center sm:flex-initial"
+                    >
+                      Print
+                    </Button>
                   </div>
                 )}
-              </div>
-            </section>
+              </section>
+            </div>
 
             {/* Program-specific Enrolled Customers Section */}
             <section

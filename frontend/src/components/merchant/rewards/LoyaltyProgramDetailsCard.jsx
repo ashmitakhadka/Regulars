@@ -38,21 +38,21 @@ const getEarningSummary = (rule, tiers) => {
 
 const Row = ({ label, children }) => (
   <>
-    <dt className="text-[13px] text-[#23140C]/60">{label}</dt>
-    <dd className="min-w-0 text-[14px] text-[#23140C]">{children}</dd>
+    <dt className="text-[12.5px] text-[#23140C]/60">{label}</dt>
+    <dd className="min-w-0 text-[13.5px] text-[#23140C]">{children}</dd>
   </>
 );
 
 const Section = ({ title, children }) => (
   <section>
-    <h3 className="font-display text-[15px] font-bold text-[#23140C]">
+    <h3 className="font-display text-[14px] font-bold text-[#23140C]">
       {title}
     </h3>
-    <div className="mt-3">{children}</div>
+    <div className="mt-2">{children}</div>
   </section>
 );
 
-export const LoyaltyProgramDetailsCard = ({ program }) => {
+export const LoyaltyProgramDetailsCard = ({ program, className = "" }) => {
   if (!program) return null;
 
   const versions = program.versions || [];
@@ -72,18 +72,20 @@ export const LoyaltyProgramDetailsCard = ({ program }) => {
     reward?.reward_value !== null && reward?.reward_value !== undefined;
 
   return (
-    <div className="space-y-8 rounded-2xl bg-white p-5 sm:p-7 lg:p-8 shadow-[0_2px_12px_rgba(35,20,12,0.06)]">
+    <div
+      className={`space-y-4 sm:space-y-5 rounded-2xl bg-white p-4 sm:p-5 lg:p-6 shadow-[0_2px_12px_rgba(35,20,12,0.06)] ${className}`.trim()}
+    >
       {/* Overview (the page title already shows the name) */}
       <header>
         {program.description && (
-          <p className="text-[14px] leading-relaxed text-[#23140C]/80">
+          <p className="text-[13.5px] leading-relaxed text-[#23140C]/80">
             {program.description}
           </p>
         )}
 
         <p
-          className={`text-[13px] text-[#23140C]/60 ${
-            program.description ? "mt-2" : ""
+          className={`text-[12px] text-[#23140C]/60 ${
+            program.description ? "mt-1.5" : ""
           }`}
         >
           Created {formatDate(program.created_at)} · Version{" "}
@@ -94,7 +96,7 @@ export const LoyaltyProgramDetailsCard = ({ program }) => {
       {/* Earning and reward (quantity programs show the Products list instead) */}
       {!isQuantity && (
         <Section title="Earning and reward">
-          <dl className="grid grid-cols-1 gap-y-2 sm:grid-cols-[7rem_1fr] sm:gap-x-4 sm:gap-y-3">
+          <dl className="grid grid-cols-1 gap-y-1.5 sm:grid-cols-[6.5rem_1fr] sm:gap-x-3 sm:gap-y-2">
             <Row label="Earn">
               {getEarningSummary(earningRule, tiers)}
             </Row>
